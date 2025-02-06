@@ -1,9 +1,10 @@
 'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Menu as HeadlessMenu, Transition } from '@headlessui/react';
-import { Bars3Icon, ChevronDownIcon, CheckIcon } from '@heroicons/react/24/outline';
-import { Fragment } from 'react';
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Menu } from "lucide-react"
+import LanguageSelector from '../components/LanguageSelector';
 
 type Language = {
   greeting: string;
@@ -73,15 +74,9 @@ const languages: Record<string, Language> = {
   }
 };
 
-const languageNames: Record<string, string> = {
-  en: 'English',
-  es: 'Español',
-  de: 'Deutsch'
-};
 
 export default function Home() {
   const [currentLang, setCurrentLang] = useState('en');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const t = languages[currentLang as keyof typeof languages];
 
   return (
@@ -108,13 +103,28 @@ export default function Home() {
       {/* Header with responsive navigation */}
       <header className="fixed w-full top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-gray-100">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          {/* Mobile menu button */}
-          <button
-            className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            <Bars3Icon className="h-6 w-6" />
-          </button>
+          {/* Mobile menu */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="lg:hidden">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[240px] sm:w-[300px]">
+              <nav className="flex flex-col gap-4">
+                {Object.entries(t.menu).map(([key, value]) => (
+                  <a
+                    key={key}
+                    href={`#${key}`}
+                    className="block py-2 hover:text-blue-500 transition-colors"
+                  >
+                    {value as string}
+                  </a>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
 
           {/* Desktop menu */}
           <nav className="hidden lg:block">
@@ -129,63 +139,10 @@ export default function Home() {
             </ul> */}
           </nav>
 
-          {/* Language toggle - desktop */}
-          <HeadlessMenu as="div" className="relative">
-            <button className="flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-              {languageNames[currentLang]}
-              <ChevronDownIcon className="w-4 h-4" />
-            </button>
-            <Transition
-              as={Fragment}
-              enter="transition ease-out duration-100"
-              enterFrom="transform opacity-0 scale-95"
-              enterTo="transform opacity-100 scale-100"
-              leave="transition ease-in duration-75"
-              leaveFrom="transform opacity-100 scale-100"
-              leaveTo="transform opacity-0 scale-95"
-            >
-              <div className="absolute right-0 mt-2 w-36 rounded-lg bg-white shadow-lg border border-gray-100 focus:outline-none">
-                {['en', 'es', 'de'].map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => {                      
-                      setCurrentLang(lang)
-
-                    }}
-                    className={`group flex w-full items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 ${
-                      currentLang === lang ? 'font-medium' : ''
-                    }`}
-                  >
-                    {languageNames[lang]}
-                    {currentLang === lang && <CheckIcon className="w-4 h-4" />}
-                  </button>
-                ))}
-              </div>
-            </Transition>
-          </HeadlessMenu>
-        </div>
-
-        {/* Mobile menu */}
-        <div
-          className={`lg:hidden ${
-            isMobileMenuOpen ? 'block' : 'hidden'
-          } bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm`}
-        >
-          <nav className="container mx-auto px-4 py-4">
-            <ul className="space-y-4">
-              {Object.entries(t.menu).map(([key, value]) => (
-                <li key={key}>
-                  <a
-                    href={`#${key}`}
-                    className="block py-2 hover:text-blue-500 transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {value as string}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <LanguageSelector 
+            currentLang={currentLang}
+            onLanguageChange={setCurrentLang}
+          />
         </div>
       </header>
 
