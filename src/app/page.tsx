@@ -146,23 +146,19 @@ export default function Home() {
             >
               <div className="absolute right-0 mt-2 w-36 rounded-lg bg-white shadow-lg border border-gray-100 focus:outline-none">
                 {['en', 'es', 'de'].map((lang) => (
-                  <HeadlessMenu.Item key={lang}>
-                    {({ active }) => (
-                      <button
-                        onClick={() => setCurrentLang(lang)}
-                        className={`${
-                          active ? 'bg-gray-50' : ''
-                        } ${
-                          currentLang === lang ? 'font-medium' : ''
-                        } group flex w-full items-center justify-between px-4 py-2 text-sm`}
-                      >
-                        {languageNames[lang]}
-                        {currentLang === lang && (
-                          <CheckIcon className="w-4 h-4" />
-                        )}
-                      </button>
-                    )}
-                  </HeadlessMenu.Item>
+                  <button
+                    key={lang}
+                    onClick={() => {                      
+                      setCurrentLang(lang)
+
+                    }}
+                    className={`group flex w-full items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 ${
+                      currentLang === lang ? 'font-medium' : ''
+                    }`}
+                  >
+                    {languageNames[lang]}
+                    {currentLang === lang && <CheckIcon className="w-4 h-4" />}
+                  </button>
                 ))}
               </div>
             </Transition>
