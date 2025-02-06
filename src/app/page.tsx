@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
@@ -148,17 +148,21 @@ export default function Home() {
 
       {/* Main content */}
       <main className="container mx-auto max-w-2xl min-h-screen flex flex-col items-center justify-center px-4 md:px-6 space-y-8 relative z-10 pt-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-4 px-4"
-        >
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold">{t.greeting}</h1>
-          <p className="text-base md:text-lg text-slate-600 dark:text-slate-300 max-w-md mx-auto">
-            {t.role}
-          </p>
-          {/* <p className="text-lg md:text-xl mt-2">{t.helpText}</p> */}
-        </motion.div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentLang}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="text-center space-y-4 px-4"
+          >
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold">{t.greeting}</h1>
+            <p className="text-base md:text-lg text-slate-600 dark:text-slate-300 max-w-md mx-auto">
+              {t.role}
+            </p>
+          </motion.div>
+        </AnimatePresence>
 
         {/* Input field */}
         {/* <motion.div 
