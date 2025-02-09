@@ -4,80 +4,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
-import LanguageSelector from '../components/LanguageSelector';
+import LanguageSelector from '@/components/LanguageSelector';
 
-type Language = {
-  greeting: string;
-  role: string;
-  helpText: string;
-  placeholder: string;
-  actions: {
-    project: string;
-    hire: string;
-    skills: string;
-  };
-  menu: {
-    skills: string;
-    blog: string;
-    contact: string;
-  };
-};
-
-const languages: Record<string, Language> = {
-  en: {
-    greeting: "Hi, I'm Rodrigo",
-    role: "Software Developer / UX Engineer / Media Artist / Tech Mentor",
-    helpText: "How can I help you?",
-    placeholder: "Ask me anything...",
-    actions: {
-      project: "Need help with a project?",
-      hire: "Hire me",
-      skills: "Check my skills"
-    },
-    menu: {
-      skills: "Skills",
-      blog: "Blog",
-      contact: "Contact"
-    }
-  },
-  es: {
-    greeting: "Hola, soy Rodrigo",
-    role: "Desarrollador Software / Ingeniero UX  / Artista de medios / Mentor Tecnológico",
-    helpText: "¿Cómo puedo ayudarte?",
-    placeholder: "Pregúntame lo que quieras...",
-    actions: {
-      project: "¿Necesitas ayuda con un proyecto?",
-      hire: "Contrátame",
-      skills: "Ver mis habilidades"
-    },
-    menu: {
-      skills: "Habilidades",
-      blog: "Blog",
-      contact: "Contacto"
-    }
-  },
-  de: {
-    greeting: "Hi, ich bin Rodrigo",
-    role: "Software Entwickler / UX Engineer / Medienkünstler / Tech-Mentor",
-    helpText: "Wie kann ich dir helfen?",
-    placeholder: "Frag mich etwas...",
-    actions: {
-      project: "Brauchst du Hilfe bei einem Projekt?",
-      hire: "Hire mich",
-      skills: "Meine Fähigkeiten"
-    },
-    menu: {
-      skills: "Fähigkeiten",
-      blog: "Blog",
-      contact: "Kontakt"
-    }
-  }
-};
-
+import {useTranslations} from 'next-intl';
+import {Link} from '@/i18n/routing';
+ 
 
 export default function Home() {
+  
   const [currentLang, setCurrentLang] = useState('en');
-  const t = languages[currentLang as keyof typeof languages];
+  
+  const t = useTranslations('home');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white text-gray-800 relative">
@@ -112,8 +49,8 @@ export default function Home() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[240px] sm:w-[300px]">
-              <nav className="flex flex-col gap-4">
-                {Object.entries(t.menu).map(([key, value]) => (
+              <nav className="flex flex-col gap-4">                
+                {/* {Object.entries(t.menu).map(([key, value]) => (
                   <a
                     key={key}
                     href={`#${key}`}
@@ -121,7 +58,7 @@ export default function Home() {
                   >
                     {value as string}
                   </a>
-                ))}
+                ))} */}
               </nav>
             </SheetContent>
           </Sheet>
@@ -157,9 +94,9 @@ export default function Home() {
             transition={{ duration: 0.3 }}
             className="text-center space-y-4 px-4"
           >
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold">{t.greeting}</h1>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold">{t('greeting')}</h1>
             <p className="text-base md:text-lg text-slate-600 dark:text-slate-300 max-w-md mx-auto">
-              {t.role}
+              {/* {t.role} */}              
             </p>
           </motion.div>
         </AnimatePresence>
