@@ -1,7 +1,7 @@
 import {useTranslations} from 'next-intl';
 import {setRequestLocale} from 'next-intl/server';
 import PageLayout from '@/components/layout/PageLayout';
-
+import BackgroundAnimation from '@/components/layout/BackgroundAnimation/BackgroundAnimation';
 type Props = {
   params: {locale: string};
 };
@@ -13,7 +13,8 @@ export default function IndexPage({params: {locale}}: Props) {
   const t = useTranslations('home');
 
   return (
-    <PageLayout title={t('title')}>
+    <PageLayout>
+      <BackgroundAnimation />
       <h1 className="text-3xl font-semibold leading-tight tracking-tight text-white md:text-5xl">
         {t('greeting')}
       </h1>
