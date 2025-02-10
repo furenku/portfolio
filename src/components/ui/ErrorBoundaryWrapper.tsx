@@ -6,12 +6,13 @@ import { ReactNode } from 'react';
 
 type Props = {
   children: ReactNode;
+  messages: any;
 };
 
-export default function ErrorBoundaryWrapper({ children }: Props) {
+export default function ErrorBoundaryWrapper({ children, messages }: Props) {
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
+    <ErrorBoundary FallbackComponent={(props) => <ErrorFallback {...props} messages={messages} />}>
       {children}
     </ErrorBoundary>
   );
-} 
+}

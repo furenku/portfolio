@@ -1,10 +1,31 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import './BackgroundAnimation.css';
 
+// Add these interfaces after imports
+interface AnimationParams {
+    rotationSpeed: number;
+    particleCount: number;
+    attractorStrength: number;
+    breathingSpeed: number;
+}
+
 const BackgroundAnimation: React.FC = () => {
     const mountRef = useRef<HTMLDivElement>(null);
+    const minimapRef = useRef<HTMLCanvasElement>(null);
+    const [params, setParams] = useState<AnimationParams>({
+        rotationSpeed: 0.0001,
+        particleCount: 20000,
+        attractorStrength: 0.85,
+        breathingSpeed: 0.9
+    });
+    const [stats, setStats] = useState({
+        fps: 0,
+        time: 0,
+        cameraPos: { x: 0, y: 0, z: 0 },
+        particleCenter: { x: 0, y: 0, z: 0 }
+    });
 
     useEffect(() => {
         const currentMount = mountRef.current;
@@ -43,7 +64,7 @@ const BackgroundAnimation: React.FC = () => {
         const colors = [];
         const originalPositions = [];
 
-        for (let i = 0; i < 10000; i++) {
+        for (let i = 0; i < params.particleCount; i++) {
             const x = THREE.MathUtils.randFloatSpread(20);
             const y = THREE.MathUtils.randFloatSpread(20);
             const z = THREE.MathUtils.randFloatSpread(20);
@@ -123,12 +144,12 @@ const BackgroundAnimation: React.FC = () => {
 
         // Add these variables after scene setup
         let time = 0;
-        const rotationSpeed = 0.0001; // Slower base rotation
+        const rotationSpeed = params.rotationSpeed;
         const attractorScale = 0.8;
         
         // Add camera movement variables
         let cameraAngle = 100;
-        let cameraRadius = 9;
+        let cameraRadius = 6;
         let cameraHeight = 0;
         
         // Modify these variables after scene setup
@@ -161,12 +182,33 @@ const BackgroundAnimation: React.FC = () => {
 
         window.addEventListener('click', handleClick);
 
+        // After scene setup, add these constants
+        const lorenzParams = {
+            sigma: 10,
+            rho: 28,
+            beta: 8/3,
+            dt: 0.001
+        };
+
+        const attractors = [
+            new THREE.Vector3(2.5, -1.2, 0.8),
+            new THREE.Vector3(-1.8, 1.5, -0.5),
+            new THREE.Vector3(0.7, -2.1, 1.9),
+            new THREE.Vector3(-2.4, 0.9, -1.7),
+            new THREE.Vector3(1.6, -1.8, 2.3),
+            new THREE.Vector3(-0.9, 2.2, -1.1),
+            new THREE.Vector3(2.1, -0.6, 1.4),
+            new THREE.Vector3(-1.5, 1.7, -2.0),
+            new THREE.Vector3(0.4, -1.9, 0.6),
+            new THREE.Vector3(1.9, 1.1, -1.3),
+        ];
+
         // Animation loop modification
         const animate = () => {
             requestAnimationFrame(animate);
             
             // Create organic breathing rhythm
-            const breathingCycle = Math.sin(time * 0.2) * Math.sin(time * 0.07);
+            const breathingCycle = Math.sin(time * params.breathingSpeed) * Math.sin(time * 0.07);
             const pulseFactor = Math.pow(Math.sin(time * 0.15), 3);
             time += 0.001 * (1 + breathingCycle * 0.5);
             
@@ -196,22 +238,38 @@ const BackgroundAnimation: React.FC = () => {
                 const originalY = originalPositions[i + 1];
                 const originalZ = originalPositions[i + 2];
 
-                const radius = Math.sqrt(originalX * originalX + originalY * originalY);
-                const baseAngle = Math.atan2(originalY, originalX);
+                // Lorenz attractor influence
+                const x = positions[i];
+                const y = positions[i + 1];
+                const z = positions[i + 2];
                 
-                // Organic rotation with pauses
-                const rotationAngle = baseAngle + 
-                    time * (0.5 + pulseFactor * 0.5) * rotationSpeed + 
-                    Math.sin(time * 0.3 + radius) * 0.1;
+                const dx = lorenzParams.sigma * (y - x);
+                const dy = x * (lorenzParams.rho - z) - y;
+                const dz = x * y - lorenzParams.beta * z;
 
-                // Breathing motion
-                const breathingAmplitude = 0.3 + Math.abs(breathingCycle) * 0.2;
-                const heightOffset = Math.sin(time * 0.4 + radius) * breathingAmplitude;
-                const spiralRadius = radius + breathingCycle * 0.3;
+                positions[i] += dx * lorenzParams.dt;
+                positions[i + 1] += dy * lorenzParams.dt;
+                positions[i + 2] += dz * lorenzParams.dt;
 
-                positions[i] = (Math.cos(rotationAngle) * spiralRadius + targetX) * attractorScale;
-                positions[i + 1] = (Math.sin(rotationAngle) * spiralRadius + targetY) * attractorScale;
-                positions[i + 2] = (originalZ + heightOffset) * attractorScale * (1 + pulseFactor * 0.2);
+                // Attractor influence
+                attractors.forEach((attractor, idx) => {
+                    const dist = new THREE.Vector3(x, y, z).distanceTo(attractor);
+                    const force = params.attractorStrength / (dist * dist);
+                    
+                    positions[i] += (attractor.x - x) * force;
+                    positions[i + 1] += (attractor.y - y) * force;
+                    positions[i + 2] += (attractor.z - z) * force;
+                    
+                    // Add local tornado effect
+                    const angle = time * (0.5 + idx * 0.2);
+                    positions[i] += Math.sin(angle) * force * 0.5;
+                    positions[i + 1] += Math.cos(angle) * force * 0.5;
+                });
+
+                // Add bounds to prevent particles from escaping
+                positions[i] = THREE.MathUtils.clamp(positions[i], -10, 10);
+                positions[i + 1] = THREE.MathUtils.clamp(positions[i + 1], -10, 10);
+                positions[i + 2] = THREE.MathUtils.clamp(positions[i + 2], -10, 10);
             }
 
             geometry.attributes.position.needsUpdate = true;
@@ -221,7 +279,7 @@ const BackgroundAnimation: React.FC = () => {
                 transitionProgress += 0.015; // Adjust speed
                 const easing = 1 - Math.cos(transitionProgress * Math.PI * 0.5);
                 
-                const offset = new THREE.Vector3(0, 0, 3);
+                const offset = new THREE.Vector3(0, 0, 2);
                 const targetCameraPos = targetPosition.clone().add(offset);
                 
                 camera.position.lerp(targetCameraPos, easing);
@@ -243,9 +301,66 @@ const BackgroundAnimation: React.FC = () => {
             currentMount?.removeChild(renderer.domElement);
             window.removeEventListener('click', handleClick);
         };
-    }, []);
+    }, [params.particleCount, params.rotationSpeed, params.attractorStrength, params.breathingSpeed]);
 
-    return <div ref={mountRef} className="background-animation" />;
+    // Add inside useEffect, before return:
+    const updateStats = () => {
+        setStats({
+            fps: Math.round(1000 / (performance.now() - lastFrame)),
+            time: time,
+            cameraPos: {
+                x: Number(camera.position.x.toFixed(2)),
+                y: Number(camera.position.y.toFixed(2)),
+                z: Number(camera.position.z.toFixed(2))
+            },
+            particleCenter: {
+                x: Number(points.position.x.toFixed(2)),
+                y: Number(points.position.y.toFixed(2)),
+                z: Number(points.position.z.toFixed(2))
+            }
+        });
+    };
+
+    return (
+        <>
+            <div ref={mountRef} className="background-animation" />
+            <div className="floating-ui" aria-label="Animation Controls">
+                <div className="controls-section">
+                    <h3>Controls</h3>
+                    {Object.entries(params).map(([key, value]) => (
+                        <div key={key} className="control-item">
+                            <label htmlFor={key}>{key}</label>
+                            <input
+                                id={key}
+                                type="range"
+                                min={0}
+                                max={key === 'particleCount' ? 20000 : 1}
+                                step={key === 'particleCount' ? 1000 : 0.001}
+                                value={value}
+                                onChange={(e) => setParams({
+                                    ...params,
+                                    [key]: parseFloat(e.target.value)
+                                })}
+                                aria-label={`Adjust ${key}`}
+                            />
+                            <span>{value.toFixed(3)}</span>
+                        </div>
+                    ))}
+                </div>
+                
+                <div className="stats-section">
+                    <h3>Stats</h3>
+                    <div>FPS: {stats.fps}</div>
+                    <div>Time: {stats.time.toFixed(2)}</div>
+                    <div>Camera: ({stats.cameraPos.x}, {stats.cameraPos.y}, {stats.cameraPos.z})</div>
+                </div>
+
+                <div className="minimap" aria-label="Scene Minimap">
+                    <canvas ref={minimapRef} width="150" height="150" />
+                </div>
+            </div>
+        </>
+    );
 };
 
 export default BackgroundAnimation;
