@@ -63,15 +63,28 @@ const BackgroundAnimation: React.FC = () => {
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
         geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
+        // const material = new THREE.PointsMaterial({
+        //     vertexColors: true,
+        //     size: 0.03, // Even smaller size
+        //     transparent: true,
+        //     opacity: 0.2, // Lower opacity
+        //     blending: THREE.CustomBlending,
+        //     blendEquation: THREE.AddEquation,
+        //     blendSrc: THREE.SrcAlphaFactor,
+        //     blendDst: THREE.OneFactor,
+        // });
         const material = new THREE.PointsMaterial({
             vertexColors: true,
-            size: 0.03, // Even smaller size
+            size: 0.02,
             transparent: true,
-            opacity: 0.2, // Lower opacity
+            opacity: 0.25,
             blending: THREE.CustomBlending,
             blendEquation: THREE.AddEquation,
             blendSrc: THREE.SrcAlphaFactor,
             blendDst: THREE.OneFactor,
+            // map: new THREE.TextureLoader().load(
+            //     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAACXBIWXMAAAsTAAALEwEAmpwYAAAFFmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNy4yLWMwMDAgNzkuMWI2NWE3OWI0LCAyMDIyLzA2LzEzLTIyOjAxOjAxICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgMjQuMCAoTWFjaW50b3NoKSIgeG1wOkNyZWF0ZURhdGU9IjIwMjQtMDEtMjNUMTY6Mzk6NDctMDU6MDAiIHhtcDpNZXRhZGF0YURhdGU9IjIwMjQtMDEtMjNUMTY6Mzk6NDctMDU6MDAiIHhtcDpNb2RpZnlEYXRlPSIyMDI0LTAxLTIzVDE2OjM5OjQ3LTA1OjAwIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjNhMWY4ZmE0LTNkZDAtNDI0ZC1hMzBhLTBlNjM4MzVkMzM0ZiIgeG1wTU06RG9jdW1lbnRJRD0iYWRvYmU6ZG9jaWQ6cGhvdG9zaG9wOjY3ZDFmYWE1LTY0ZDAtYzU0OC1hNzA3LTBiYzFiZmI5ZjJhYiIgeG1wTU06T3JpZ2luYWxEb2N1bWVudElEPSJ4bXAuZGlkOjY0ZTI5ZjZhLTNkZDAtNDI0ZC1hMzBhLTBlNjM4MzVkMzM0ZiIgZGM6Zm9ybWF0PSJpbWFnZS9wbmciIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiPiA8eG1wTU06SGlzdG9yeT4gPHJkZjpTZXE+IDxyZGY6bGkgc3RFdnQ6YWN0aW9uPSJjcmVhdGVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjY0ZTI5ZjZhLTNkZDAtNDI0ZC1hMzBhLTBlNjM4MzVkMzM0ZiIgc3RFdnQ6d2hlbj0iMjAyNC0wMS0yM1QxNjozOTo0Ny0wNTowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKE1hY2ludG9zaCkiLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249InNhdmVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjNhMWY4ZmE0LTNkZDAtNDI0ZC1hMzBhLTBlNjM4MzVkMzM0ZiIgc3RFdnQ6d2hlbj0iMjAyNC0wMS0yM1QxNjozOTo0Ny0wNTowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKE1hY2ludG9zaCkiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPC9yZGY6U2VxPiA8L3htcE1NOkhpc3Rvcnk+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+YoqsBwAAAGNJREFUGJV9kDEOgCAQBPc0/oE/4Jf8AQUJhYWVlbHwzrDGRC4hF3aTKXYvAkBmXhHxrPQqM1cGwzCzHhFjpVdm1g0GwwXgBXB19k5ETJIGwA5gqfTKzHYDwCRpfv//QS/UGyFlITKqm3y0AAAAAElFTkSuQmCC'
+            // ),
         });
 
         const points = new THREE.Points(geometry, material);
@@ -118,6 +131,36 @@ const BackgroundAnimation: React.FC = () => {
         let cameraRadius = 9;
         let cameraHeight = 0;
         
+        // Modify these variables after scene setup
+        const targetPosition = new THREE.Vector3();
+        const currentLookAt = new THREE.Vector3();
+        const targetLookAt = new THREE.Vector3();
+        let isTransitioning = false;
+        let transitionProgress = 0;
+        
+        const handleClick = (event: MouseEvent) => {
+            const mouse = new THREE.Vector2(
+                (event.clientX / width) * 2 - 1,
+                -(event.clientY / height) * 2 + 1
+            );
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.params.Points!.threshold = 0.1;
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObject(points);
+            
+            if (intersects.length > 0) {
+                targetPosition.copy(intersects[0].point);
+                targetLookAt.copy(intersects[0].point);
+                currentLookAt.copy(camera.position).add(camera.getWorldDirection(new THREE.Vector3()));
+                isTransitioning = true;
+                transitionProgress = 0;
+            }
+        };
+
+        window.addEventListener('click', handleClick);
+
         // Animation loop modification
         const animate = () => {
             requestAnimationFrame(animate);
@@ -173,6 +216,23 @@ const BackgroundAnimation: React.FC = () => {
 
             geometry.attributes.position.needsUpdate = true;
             shaderMaterial.uniforms.time.value += 0.005 * (1 + breathingCycle * 0.3);
+
+            if (isTransitioning) {
+                transitionProgress += 0.015; // Adjust speed
+                const easing = 1 - Math.cos(transitionProgress * Math.PI * 0.5);
+                
+                const offset = new THREE.Vector3(0, 0, 3);
+                const targetCameraPos = targetPosition.clone().add(offset);
+                
+                camera.position.lerp(targetCameraPos, easing);
+                currentLookAt.lerp(targetLookAt, easing);
+                camera.lookAt(currentLookAt);
+                
+                if (transitionProgress >= 1) {
+                    isTransitioning = false;
+                }
+            }
+
             renderer.render(scene, camera);
         };
 
@@ -181,6 +241,7 @@ const BackgroundAnimation: React.FC = () => {
         // Cleanup on unmount
         return () => {
             currentMount?.removeChild(renderer.domElement);
+            window.removeEventListener('click', handleClick);
         };
     }, []);
 
