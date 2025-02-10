@@ -110,17 +110,41 @@ const BackgroundAnimation: React.FC = () => {
 
         // Add these variables after scene setup
         let time = 0;
-        const rotationSpeed = 0.0002;
+        const rotationSpeed = 0.0001; // Slower base rotation
         const attractorScale = 0.8;
+        
+        // Add camera movement variables
+        let cameraAngle = 100;
+        let cameraRadius = 9;
+        let cameraHeight = 0;
         
         // Animation loop modification
         const animate = () => {
             requestAnimationFrame(animate);
-            time += 0.001; // Very slow time increment
             
-            // Smooth mouse movement
-            targetX += (mouseX - targetX) * 0.02;
-            targetY += (mouseY - targetY) * 0.02;
+            // Create organic breathing rhythm
+            const breathingCycle = Math.sin(time * 0.2) * Math.sin(time * 0.07);
+            const pulseFactor = Math.pow(Math.sin(time * 0.15), 3);
+            time += 0.001 * (1 + breathingCycle * 0.5);
+            
+            // Much slower camera movement
+            cameraAngle += 0.00002 * (1 + breathingCycle * 0.02); // Reduced speed
+            cameraHeight = Math.sin(time * 0.05) * 1.5; // Slower vertical movement
+            
+            camera.position.x = Math.cos(cameraAngle) * cameraRadius;
+            camera.position.y = cameraHeight;
+            camera.position.z = Math.sin(cameraAngle) * cameraRadius *  Math.cos(time)*2;
+            
+            // Slower look-at movement
+            camera.lookAt(
+                Math.sin(time * 0.1) * 0.3,
+                Math.cos(time * 0.15) * 0.3,
+                0
+            );
+
+            // Smooth mouse movement with breathing influence
+            targetX += (mouseX - targetX) * (0.01 + Math.abs(breathingCycle) * 0.01);
+            targetY += (mouseY - targetY) * (0.01 + Math.abs(breathingCycle) * 0.01);
 
             const positions = geometry.attributes.position.array as Float32Array;
             
@@ -129,27 +153,26 @@ const BackgroundAnimation: React.FC = () => {
                 const originalY = originalPositions[i + 1];
                 const originalZ = originalPositions[i + 2];
 
-                // Lorenz attractor-inspired motion
                 const radius = Math.sqrt(originalX * originalX + originalY * originalY);
                 const baseAngle = Math.atan2(originalY, originalX);
                 
-                // Chaotic rotation with varying speeds
+                // Organic rotation with pauses
                 const rotationAngle = baseAngle + 
-                    time * (1 + Math.sin(radius * 0.2)) * rotationSpeed + 
-                    Math.sin(time * 0.5 + radius) * 0.2;
+                    time * (0.5 + pulseFactor * 0.5) * rotationSpeed + 
+                    Math.sin(time * 0.3 + radius) * 0.1;
 
-                // Add spiral motion with height variation
-                const heightOffset = Math.sin(time + radius) * 0.5;
-                const spiralRadius = radius + Math.sin(time * 0.3 + originalZ) * 0.5;
+                // Breathing motion
+                const breathingAmplitude = 0.3 + Math.abs(breathingCycle) * 0.2;
+                const heightOffset = Math.sin(time * 0.4 + radius) * breathingAmplitude;
+                const spiralRadius = radius + breathingCycle * 0.3;
 
-                // Combine autonomous motion with mouse influence
-                positions[i] = (Math.cos(rotationAngle) * spiralRadius + targetX * 1.5) * attractorScale;
-                positions[i + 1] = (Math.sin(rotationAngle) * spiralRadius + targetY * 1.5) * attractorScale;
-                positions[i + 2] = (originalZ + heightOffset + (targetX + targetY)) * attractorScale;
+                positions[i] = (Math.cos(rotationAngle) * spiralRadius + targetX) * attractorScale;
+                positions[i + 1] = (Math.sin(rotationAngle) * spiralRadius + targetY) * attractorScale;
+                positions[i + 2] = (originalZ + heightOffset) * attractorScale * (1 + pulseFactor * 0.2);
             }
 
             geometry.attributes.position.needsUpdate = true;
-            shaderMaterial.uniforms.time.value += 0.01;
+            shaderMaterial.uniforms.time.value += 0.005 * (1 + breathingCycle * 0.3);
             renderer.render(scene, camera);
         };
 
