@@ -51,12 +51,12 @@ const BackgroundAnimation: React.FC = () => {
             vertices.push(x, y, z);
             originalPositions.push(x, y, z);
 
-            // Even more subtle colors
-            const baseColor = 0.05 + Math.random() * 0.08; // Much darker base
+            // Much darker colors
+            const baseColor = 0.52 + Math.random() * 0.04;
             colors.push(
-                baseColor + Math.random() * 0.03, // Tiny red tint
-                baseColor + Math.random() * 0.02, // Tiny green tint
-                baseColor + Math.random() * 0.04  // Tiny blue tint
+                baseColor + Math.random() * 0.15,
+                baseColor + Math.random() * 0.1,
+                baseColor + Math.random() * 0.2
             );
         }
 
@@ -65,10 +65,13 @@ const BackgroundAnimation: React.FC = () => {
 
         const material = new THREE.PointsMaterial({
             vertexColors: true,
-            size: 0.06, // Smaller size
+            size: 0.03, // Even smaller size
             transparent: true,
-            opacity: 0.3, // Lower opacity
-            blending: THREE.AdditiveBlending,
+            opacity: 0.2, // Lower opacity
+            blending: THREE.CustomBlending,
+            blendEquation: THREE.AddEquation,
+            blendSrc: THREE.SrcAlphaFactor,
+            blendDst: THREE.OneFactor,
         });
 
         const points = new THREE.Points(geometry, material);
@@ -94,8 +97,8 @@ const BackgroundAnimation: React.FC = () => {
                 varying vec3 vColor;
                 void main() {
                     float dist = length(gl_PointCoord - vec2(0.5));
-                    float alpha = 1.0 - smoothstep(0.4, 0.5, dist);
-                    gl_FragColor = vec4(vColor, alpha * 0.3);
+                    float alpha = 1.0 - smoothstep(0.3, 0.4, dist);
+                    gl_FragColor = vec4(vColor, alpha * 0.2);
                 }
             `,
             transparent: true,
@@ -105,12 +108,18 @@ const BackgroundAnimation: React.FC = () => {
         const shaderPoints = new THREE.Points(geometry, shaderMaterial);
         scene.add(shaderPoints);
 
-        // Animation loop
+        // Add these variables after scene setup
+        let time = 0;
+        const rotationSpeed = 0.0002;
+        const attractorScale = 0.8;
+        
+        // Animation loop modification
         const animate = () => {
             requestAnimationFrame(animate);
+            time += 0.001; // Very slow time increment
             
             // Smooth mouse movement
-            targetX += (mouseX - targetX) * 0.02; // Slower response
+            targetX += (mouseX - targetX) * 0.02;
             targetY += (mouseY - targetY) * 0.02;
 
             const positions = geometry.attributes.position.array as Float32Array;
@@ -120,12 +129,23 @@ const BackgroundAnimation: React.FC = () => {
                 const originalY = originalPositions[i + 1];
                 const originalZ = originalPositions[i + 2];
 
-                const angle = Math.atan2(originalY, originalX) + targetX * 0.3;
+                // Lorenz attractor-inspired motion
                 const radius = Math.sqrt(originalX * originalX + originalY * originalY);
+                const baseAngle = Math.atan2(originalY, originalX);
                 
-                positions[i] = Math.cos(angle) * radius + targetX * 1.5;
-                positions[i + 1] = Math.sin(angle) * radius + targetY * 1.5;
-                positions[i + 2] = originalZ + (targetX + targetY) * 1.5;
+                // Chaotic rotation with varying speeds
+                const rotationAngle = baseAngle + 
+                    time * (1 + Math.sin(radius * 0.2)) * rotationSpeed + 
+                    Math.sin(time * 0.5 + radius) * 0.2;
+
+                // Add spiral motion with height variation
+                const heightOffset = Math.sin(time + radius) * 0.5;
+                const spiralRadius = radius + Math.sin(time * 0.3 + originalZ) * 0.5;
+
+                // Combine autonomous motion with mouse influence
+                positions[i] = (Math.cos(rotationAngle) * spiralRadius + targetX * 1.5) * attractorScale;
+                positions[i + 1] = (Math.sin(rotationAngle) * spiralRadius + targetY * 1.5) * attractorScale;
+                positions[i + 2] = (originalZ + heightOffset + (targetX + targetY)) * attractorScale;
             }
 
             geometry.attributes.position.needsUpdate = true;
