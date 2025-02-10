@@ -1,5 +1,106 @@
 {
     "home": {
-        "greeting": "Hola, soy Rodrigo"
+        "greeting": "¡Hola! Soy Rodrigo",
+        "description": "Este es mi portafolio profesional. He tenido la fortuna de trabajar en distintas áreas de tecnología, y aquí podrás conocer las habilidades y experiencias que te interesen."
+    },
+    "skills": {
+        "title": "Habilidades",
+        "description": "Estas son algunas de las tecnologías con las que trabajo.",
+        "items": [
+            {
+                "title": "Desarrollo web",
+                "items": [
+                    {
+                        "title": "Front-End",
+                        "description": "Creo interfaces bonitas y accesibles que la gente disfruta usar."
+                    },
+                    {
+                        "title": "Back-End",
+                        "description": "Desarrollo sistemas robustos que potencian grandes experiencias."
+                    },
+                    {
+                        "title": "Devops",
+                        "description": "Me aseguro de que todo funcione perfectamente tras bambalinas."
+                    }
+                ]
+            },
+            {
+                "title": "Diseño UX/UI y gestión de productos digitales",
+                "items": [
+                    {
+                        "title": "Producto",
+                        "description": "Transformo buenas ideas en soluciones aún mejores."
+                    },
+                    {
+                        "title": "Diseño UX/UI",
+                        "description": "Diseño experiencias agradables que funcionan de maravilla."
+                    }
+                ]
+            },
+            {
+                "title": "Dirección de equipos de tecnología",
+                "items": [
+                    {
+                        "title": "Gestión de equipos",
+                        "description": "Cultivo equipos felices y productivos."
+                    },
+                    {
+                        "title": "Gestión de proyectos",
+                        "description": "Guío proyectos desde la idea hasta su realización, de forma fluida y eficiente."
+                    }
+                ]
+            }
+        ],
+        "views": {
+            "title": "Vistas",
+            "description": "Elige cómo quieres explorar.",
+            "items": [
+                {
+                    "title": "Lista",
+                    "description": "Una lista de texto simple y clara."
+                },
+                {
+                    "title": "3D",
+                    "description": "Una visualización interactiva usando three.js."
+                },
+                {
+                    "title": "Gráficas interactivas",
+                    "description": "Visualización de datos usando d3.js."
+                }
+            ]
+        }
+    },
+    "ui": {
+        "error": {
+            "title": "¡Ups!",
+            "description": "Ocurrió un error al cargar la página.",
+            "reload": "Intentemos de nuevo"
+        },
+        "idiomas": {
+            "label": "Idioma",
+            "locales": {
+                "en": "English",
+                "es": "Español"
+            }
+        },
+        "navigation": {
+            "home": "Inicio",
+            "skills": "Habilidades",
+            "projects": "Proyectos",
+            "contact": "Contacto"
+        },
+        "title": "Rodrigo Frenk",
+        "links": {
+            "github": {
+                "title": "Github",
+                "href": "https://github.com/furenku",
+                "description": "Explora mis proyectos open source"
+            },
+            "repo": {
+                "title": "El código de este sitio",
+                "description": "Explora el código de este sitio",
+                "href": "https://github.com/furenku/portfolio"
+            }    
+        }
     }
 }

@@ -1,53 +1,42 @@
-import type { Metadata } from "next";
-
-
-import {NextIntlClientProvider} from 'next-intl';
-import {getMessages} from 'next-intl/server';
 import {notFound} from 'next/navigation';
+import {getTranslations, setRequestLocale} from 'next-intl/server';
+import {ReactNode} from 'react';
+import BaseLayout from '@/components/layout/BaseLayout';
 import {routing} from '@/i18n/routing';
 
-
-import { Geist, Geist_Mono } from "next/font/google";
-import "@/app/globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "Rodrigo Frenk",
-  description: "Portfolio",
+type Props = {
+  children: ReactNode;
+  params: {locale: string};
 };
 
-export default async function RootLayout({
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({locale}));
+}
+
+export async function generateMetadata({
+  params: {locale}
+}: Omit<Props, 'children'>) {
+  const t = await getTranslations({locale, namespace: 'ui'});
+
+  return {
+    title: t('title'),
+    htmlAttributes: {
+      lang: locale
+    }
+  };
+}
+
+export default async function LocaleLayout({
   children,
   params: {locale}
-}: {
-  children: React.ReactNode;
-  params: {locale: string};
-}) {
+}: Props) {
   // Ensure that the incoming `locale` is valid
   if (!routing.locales.includes(locale as any)) {
     notFound();
   }
- 
-  // Providing all messages to the client
-  // side is the easiest way to get started
-  const messages = await getMessages();
- 
-  return (
-    <html lang={locale}>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <NextIntlClientProvider messages={messages}>
-          {children}
-        </NextIntlClientProvider>
-      </body>
-    </html>
-  );
+
+  // Enable static rendering
+  setRequestLocale(locale);
+
+  return <BaseLayout>{children}</BaseLayout>;
 }

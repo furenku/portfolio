@@ -1,5 +1,107 @@
 {
     "home": {
-        "greeting": "Hi, I'm Rodrigo"
+        "title": "Rodrigo Frenk",
+        "greeting": "Hi, I'm Rodrigo",
+        "description": "This is my portfolio as a technology worker. I've been fortunate to work in various areas, and here you can learn about my skills and experiences that interest you."
+    },
+    "skills": {
+        "title": "Skills",
+        "description": "Here are some of the technologies I've worked with.",
+        "items": [
+            {
+                "title": "Web Development",
+                "items": [
+                    {
+                        "title": "Front-End",
+                        "description": "Building beautiful, accessible interfaces that people love to use."
+                    },
+                    {
+                        "title": "Back-End",
+                        "description": "Creating robust systems that power great experiences."
+                    },
+                    {
+                        "title": "Devops",
+                        "description": "Making sure everything runs smoothly behind the scenes."
+                    }
+                ]
+            },
+            {
+                "title": "UX/UI Design & Digital Product Management",
+                "items": [
+                    {
+                        "title": "Product",
+                        "description": "Turning great ideas into even better solutions."
+                    },
+                    {
+                        "title": "UX/UI Design",
+                        "description": "Crafting delightful experiences that just work."
+                    }
+                ]
+            },
+            {
+                "title": "Tech Team Leadership",
+                "items": [
+                    {
+                        "title": "Team Management",
+                        "description": "Growing happy, productive tech teams."
+                    },
+                    {
+                        "title": "Project Management",
+                        "description": "Guiding projects from idea to reality, smoothly and efficiently."
+                    }
+                ]
+            }
+        ],
+        "views": {
+            "title": "Views",
+            "description": "Pick your favorite way to explore.",
+            "items": [
+                {
+                    "title": "List",
+                    "description": "A simple, clean text list."
+                },
+                {
+                    "title": "3D",
+                    "description": "An interactive 3D visualization using three.js."
+                },
+                {
+                    "title": "Interactive Charts",
+                    "description": "Data visualization using d3.js."
+                }
+            ]
+        }
+    },
+    "ui": {
+        "error": {
+            "title": "Oops!",
+            "description": "Something went wrong while loading the page.",
+            "reload": "Let's try again"
+        },
+        "idiomas": {
+            "label": "Language",
+            "locales": {
+                "en": "English",
+                "es": "Español"
+            }
+        },
+        "navigation": {
+            "home": "Home",
+            "skills": "Skills",
+            "projects": "Projects",
+            "contact": "Contact"
+        },
+        "title": "Rodrigo Frenk",
+        "links": {
+            "github": {
+                "title": "Github",
+                "href": "https://github.com/furenku",
+                "description": "Check out my open source projects"
+            },
+            "repo": {
+                "title": "This website's code",
+                "description": "Check out the code for this website",
+                "href": "https://github.com/furenku/portfolio"
+            }
+        }
     }
 }
