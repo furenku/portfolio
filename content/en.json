@@ -71,6 +71,83 @@
             ]
         }
     },
+
+    
+    "experience": {
+        "title": "Experience",
+        "summary": {
+            "title": "Professional Summary",
+            "description": "I lead technical teams in high-impact projects, from government platforms (CDMX Prosecutor's Office, SEDATU) to open source tools (INSTRUMENT). My experience spans system architecture, UX design, and mentoring in science and technology hackathons (HAWC, LABIC)."
+        },
+        "philosophy": {
+            "title": "Philosophy",
+            "description": "I believe in technological solutions that empower their users, whether by simplifying bureaucratic processes or democratizing creative tools. I prioritize scalability, clean code, and interdisciplinary collaboration."
+        },
+        "keyProjects": {
+            "title": "Key Projects",
+            "categories": [
+                {
+                    "title": "Government & Transparency",
+                    "projects": [
+                        {
+                            "title": "CCD Web Laboratory",
+                            "technologies": ["Kubernetes", "SvelteKit", "Node.js"],
+                            "achievement": "Interactive mapping system for indigenous languages, showcased at FIL 2020"
+                        },
+                        {
+                            "title": "SITU - SEDATU",
+                            "technologies": ["React", "Flask", "Docker"],
+                            "achievement": "Territorial decision-making tool for public officials"
+                        }
+                    ]
+                },
+                {
+                    "title": "Civic Innovation",
+                    "projects": [
+                        {
+                            "title": "Hackcorruption 2023",
+                            "technologies": ["GIS", "Python", "React"],
+                            "achievement": "International hackathon winner with anti-corruption tool"
+                        },
+                        {
+                            "title": "LABIC",
+                            "technologies": ["Open Data", "Firebase"],
+                            "achievement": "Co-creation of citizen participation tools in Latin America"
+                        }
+                    ]
+                },
+                {
+                    "title": "Tech & Art",
+                    "projects": [
+                        {
+                            "title": "INSTRUMENT",
+                            "technologies": ["SuperCollider", "C++"],
+                            "achievement": "Open source live coding tool used in international festivals",
+                            "demo": {
+                                "title": "See musical demo →",
+                                "href": "#"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "scienceArtTech": {
+            "title": "Science + Art + Technology",
+            "highlights": [
+                {
+                    "title": "HAWC Hackathon Mentor",
+                    "description": "Design of data visualization tools for the world's largest gamma-ray telescope"
+                },
+                {
+                    "title": "LABIC Projects",
+                    "description": "Development of collaborative platforms for citizen innovation in Mexico and Spain"
+                }
+            ]
+        }
+    
+    },
+
     "ui": {
         "error": {
             "title": "Oops!",

@@ -70,6 +70,82 @@
             ]
         }
     },
+
+    
+    "experience": {
+        "title": "Experiencia",
+        "summary": {
+            "title": "Resumen Profesional",
+            "description": "Lidero equipos técnicos en proyectos de alto impacto, desde plataformas gubernamentales (Fiscalía CDMX, SEDATU) hasta herramientas open source (INSTRUMENT). Mi experiencia abarca arquitectura de sistemas, diseño UX, y mentoría en hackatones de ciencia y tecnología (HAWC, LABIC)."
+        },
+        "philosophy": {
+            "title": "Filosofía",
+            "description": "Creo en soluciones tecnológicas que empoderen a sus usuarios, ya sea simplificando procesos burocráticos o democratizando herramientas creativas. Priorizo la escalabilidad, el código limpio y la colaboración interdisciplinaria."
+        },
+        "keyProjects": {
+            "title": "Proyectos Clave",
+            "categories": [
+                {
+                    "title": "Gobierno y Transparencia",
+                    "projects": [
+                        {
+                            "title": "Laboratorio Web CCD",
+                            "technologies": ["Kubernetes", "SvelteKit", "Node.js"],
+                            "achievement": "Sistema de mapas interactivos para lenguas indígenas, presentado en la FIL 2020"
+                        },
+                        {
+                            "title": "SITU - SEDATU",
+                            "technologies": ["React", "Flask", "Docker"],
+                            "achievement": "Herramienta de toma de decisiones territoriales para funcionarios públicos"
+                        }
+                    ]
+                },
+                {
+                    "title": "Innovación Cívica",
+                    "projects": [
+                        {
+                            "title": "Hackcorruption 2023",
+                            "technologies": ["GIS", "Python", "React"],
+                            "achievement": "Ganador del hackathon internacional con herramienta anticorrupción"
+                        },
+                        {
+                            "title": "LABIC",
+                            "technologies": ["Open Data", "Firebase"],
+                            "achievement": "Co-creación de herramientas para participación ciudadana en Latinoamérica"
+                        }
+                    ]
+                },
+                {
+                    "title": "Tecnología y Arte",
+                    "projects": [
+                        {
+                            "title": "INSTRUMENT",
+                            "technologies": ["SuperCollider", "C++"],
+                            "achievement": "Herramienta open source para live coding usada en festivales internacionales",
+                            "demo": {
+                                "title": "Ver demo musical →",
+                                "href": "#"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "scienceArtTech": {
+            "title": "Ciencia + Arte + Tecnología",
+            "highlights": [
+                {
+                    "title": "Mentor en Hackatón HAWC",
+                    "description": "Diseño de herramientas de visualización de datos para el telescopio de rayos gamma más grande del mundo"
+                },
+                {
+                    "title": "Proyectos LABIC",
+                    "description": "Desarrollo de plataformas colaborativas para innovación ciudadana en México y España"
+                }
+            ]
+        }
+    },
+    
     "ui": {
         "error": {
             "title": "¡Ups!",
@@ -86,6 +162,7 @@
         "navigation": {
             "home": "Inicio",
             "skills": "Habilidades",
+            
             "projects": "Proyectos",
             "contact": "Contacto"
         },
