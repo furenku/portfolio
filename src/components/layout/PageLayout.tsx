@@ -8,7 +8,7 @@ type Props = {
 
 export default function PageLayout({children}: Props) {
     
-  const t = useTranslations('ui');
+  const t = useTranslations('config.ui');
 
   return (
     <div className="relative flex grow flex-col bg-slate-850 py-36">

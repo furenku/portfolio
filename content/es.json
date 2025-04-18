@@ -145,39 +145,56 @@
             ]
         }
     },
-    
-    "ui": {
-        "error": {
-            "title": "¡Ups!",
-            "description": "Ocurrió un error al cargar la página.",
-            "reload": "Intentemos de nuevo"
-        },
-        "idiomas": {
-            "label": "Idioma",
-            "locales": {
-                "en": "English",
-                "es": "Español"
-            }
-        },
-        "navigation": {
-            "home": "Inicio",
-            "skills": "Habilidades",
-            
-            "projects": "Proyectos",
-            "contact": "Contacto"
-        },
-        "title": "Rodrigo Frenk",
-        "links": {
-            "github": {
-                "title": "Github",
-                "href": "https://github.com/furenku",
-                "description": "Explora mis proyectos open source"
+
+
+
+    "sections": {
+        "ui": {
+            "title": "Trabajo UI",
+            "description": "Desarrollo de interfaces de usuario intuitivas y atractivas para aplicaciones web y móviles.",
+            "components": [
+                {
+                    "name": "Galería"                    
+                }
+            ]
+        }
+    },
+
+    "config": {
+        
+        "ui": {
+            "error": {
+                "title": "¡Ups!",
+                "description": "Ocurrió un error al cargar la página.",
+                "reload": "Intentemos de nuevo"
             },
-            "repo": {
-                "title": "El código de este sitio",
-                "description": "Explora el código de este sitio",
-                "href": "https://github.com/furenku/portfolio"
-            }    
+            "languages": {
+                "label": "Idioma",
+                "locales": {
+                    "en": "English",
+                    "es": "Español"
+                }
+            },
+            "navigation": {
+                "home": "Inicio",
+                "skills": "Habilidades",
+                
+                "projects": "Proyectos",
+                "contact": "Contacto"
+            },
+            "title": "Rodrigo Frenk",
+            "links": {
+                "github": {
+                    "title": "Github",
+                    "href": "https://github.com/furenku",
+                    "description": "Explora mis proyectos open source"
+                },
+                "repo": {
+                    "title": "El código de este sitio",
+                    "description": "Explora el código de este sitio",
+                    "href": "https://github.com/furenku/portfolio"
+                }    
+            }
         }
     }
 }

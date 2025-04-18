@@ -5,7 +5,7 @@ import LocaleSwitcher from './LocaleSwitcher';
 import NavigationLink from './NavigationLink';
 
 export default function Navigation() {
-  const t = useTranslations('ui.navigation');
+  const t = useTranslations('config.ui.navigation');
 
   return (
     <div className="bg-slate-850">

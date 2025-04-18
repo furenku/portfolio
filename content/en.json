@@ -148,37 +148,55 @@
     
     },
 
-    "ui": {
-        "error": {
-            "title": "Oops!",
-            "description": "Something went wrong while loading the page.",
-            "reload": "Let's try again"
-        },
-        "idiomas": {
-            "label": "Language",
-            "locales": {
-                "en": "English",
-                "es": "Español"
-            }
-        },
-        "navigation": {
-            "home": "Home",
-            "skills": "Skills",
-            "projects": "Projects",
-            "contact": "Contact"
-        },
-        "title": "Rodrigo Frenk",
-        "links": {
-            "github": {
-                "title": "Github",
-                "href": "https://github.com/furenku",
-                "description": "Check out my open source projects"
+
+    "sections": {
+        "ui": {
+            "title": "UI Work",
+            "description": "Development of intuitive and attractive user interfaces for web and mobile applications.",
+            "components": [
+                {
+                    "name": "Gallery"                    
+                }
+            ]
+        }
+    },
+
+    "config": {
+        "ui": {
+            "error": {
+                "title": "Oops!",
+                "description": "Something went wrong while loading the page.",
+                "reload": "Let's try again"
             },
-            "repo": {
-                "title": "This website's code",
-                "description": "Check out the code for this website",
-                "href": "https://github.com/furenku/portfolio"
+            "languages": {
+                "label": "Language",
+                "locales": {
+                    "en": "English",
+                    "es": "Español"
+                }
+            },
+            "navigation": {
+                "home": "Home",
+                "skills": "Skills",
+                "projects": "Projects",
+                "contact": "Contact"
+            },
+            "title": "Rodrigo Frenk",
+            "links": {
+                "github": {
+                    "title": "Github",
+                    "href": "https://github.com/furenku",
+                    "description": "Check out my open source projects"
+                },
+                "repo": {
+                    "title": "This website's code",
+                    "description": "Check out the code for this website",
+                    "href": "https://github.com/furenku/portfolio"
+                }
             }
         }
     }
+
+
+    
 }
