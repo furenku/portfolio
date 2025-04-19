@@ -153,11 +153,11 @@
         "ui": {
             "title": "UI Work",
             "description": "Development of intuitive and attractive user interfaces for web and mobile applications.",
-            "components": [
-                {
-                    "name": "Gallery"                    
+            "components": {
+                "gallery": {
+                    "title": "Gallery"
                 }
-            ]
+            }
         }
     },
 
