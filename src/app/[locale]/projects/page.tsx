@@ -1,13 +1,13 @@
 'use client';
 
 import {useTranslations} from 'next-intl';
-import PageLayout from '@/components/layout/PageLayout';
+import HomeLayout from '@/components/layout/HomeLayout';
 
 export default function ExperiencePage() {
   const t = useTranslations('experience');
 
   return (
-    <PageLayout>
+    <HomeLayout>
       <div className="flex flex-col gap-8">
         {/* Header Section */}
         <div>
@@ -68,6 +68,6 @@ export default function ExperiencePage() {
           </div>
         </div>
       </div>
-    </PageLayout>
+    </HomeLayout>
   );
 }

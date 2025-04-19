@@ -10,7 +10,7 @@ export default function Navigation() {
   return (
     <div className="bg-slate-850">
       <nav className="container flex justify-between p-2 text-white">
-        <div>
+        <div className='hidden md:block '>
           <NavigationLink href="/">{t('home')}</NavigationLink>
           <NavigationLink href="/skills">{t('skills')}</NavigationLink>
           <NavigationLink href="/projects">{t('projects')}</NavigationLink>

@@ -1,13 +1,13 @@
 'use client';
 
 import {useTranslations} from 'next-intl';
-import PageLayout from '@/components/layout/PageLayout';
+import HomeLayout from '@/components/layout/HomeLayout';
 
 export default function SkillsPage() {
   const t = useTranslations('skills');
 
   return (
-    <PageLayout>
+    <HomeLayout>
       <div className="flex flex-col gap-8">
         <div>
           <h1 className="text-3xl font-semibold leading-tight tracking-tight text-white md:text-5xl">
@@ -35,6 +35,6 @@ export default function SkillsPage() {
           ))}
         </div>
       </div>
-    </PageLayout>
+    </HomeLayout>
   );
 } 
