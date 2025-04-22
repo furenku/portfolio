@@ -13,12 +13,14 @@ export default function IndexPage({params: {locale}}: Props) {
   const t = useTranslations('sections.ui.components');
 
   return (
-    <StandardLayout>
+    <StandardLayout view="fullscreen">
       {/* <BackgroundAnimation /> */}
       <div className="w-full flex flex-col gap-2">
-        <h1 className="text-gray-500 text-xl">
+        <div className="container mx-auto my-4">
+        <h1 className="text-gray-500 text-3xl">
           { t('gallery.title') }
         </h1>
+        </div>
         <div className="w-full h-[50vh] sm:h-[60vh] xl:h-[60vh] overflow-y-hidden mb-20">
           <Gallery
             images={new Array(6).fill(true).map((_, i) => ({
