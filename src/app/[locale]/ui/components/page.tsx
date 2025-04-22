@@ -23,7 +23,8 @@ export default function IndexPage({params: {locale}}: Props) {
           <Gallery
             images={new Array(6).fill(true).map((_, i) => ({
               src: `/images/components/gallery/${6-i}.png`,
-              alt: 'image ' + (6-i).toString()
+              alt: 'image ' + (6-i).toString(),
+              caption: 'Caption text for image ' + (6-i).toString(),
             }))}
           />
         </div>

@@ -106,11 +106,11 @@ const Gallery: React.FC<GalleryProps> = ({
       </div>
 
       {lightboxOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
           <button className="absolute top-4 right-4 text-white text-2xl" onClick={closeLightbox}>✕</button>
           <button className="absolute left-4 text-white text-2xl" onClick={prevImage}>❮</button>
           <button className="absolute right-4 text-white text-2xl" onClick={nextImage}>❯</button>
-          <div className="relative w-[90%] h-[90%]">
+          <div className="relative w-[90%] h-[95%]">
             <Image
               src={images[currentIndex].src}
               alt={images[currentIndex].alt ?? 'Lightbox image'}
@@ -120,7 +120,7 @@ const Gallery: React.FC<GalleryProps> = ({
               priority
               sizes="90vw"
             />
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-center">
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white text-center">
               {images[currentIndex].caption || images[currentIndex].alt}
             </div>
           </div>
