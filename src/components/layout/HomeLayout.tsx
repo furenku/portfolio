@@ -1,6 +1,4 @@
-import {useTranslations} from 'next-intl';
-import {ReactNode} from 'react';
-import ExternalLink from '@/components/ui/ExternalLink';
+import { ReactNode } from 'react';
 
 type Props = {
   children?: ReactNode;
@@ -8,8 +6,6 @@ type Props = {
 
 export default function HomeLayout({children}: Props) {
     
-  const t = useTranslations('config.ui');
-
   return (
     <div className="relative flex grow flex-col bg-slate-850 py-36">
       
