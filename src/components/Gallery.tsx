@@ -15,7 +15,7 @@ interface GalleryProps {
 
 // A simple container component to wrap images and ensure they fill their parent
 const ImageContainer: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ children, className = '' }) => (
-  <div className={`relative w-full h-full rounded overflow-hidden ${className}`}>
+  <div className={`relative w-full h-full overflow-hidden ${className}`}>
       {children}
     </div>
   );
