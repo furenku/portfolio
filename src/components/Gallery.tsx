@@ -3,10 +3,22 @@
 import Image from 'next/image';
 import React, { useState, useEffect, useCallback } from 'react';
 
+type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+
+
+
+type ImageSize = {
+  // Store source for each img size
+  [key in Breakpoint]: string
+}
+
 export interface GalleryImage {
   src: string;
   alt?: string;
   caption?: string;
+  sizes: {
+    [key in Breakpoint]: string;
+  }
 }
 
 interface GalleryProps {
@@ -30,6 +42,21 @@ const getVisibleThumbCount = (width: number): number => {
 };
 
 
+const getBreakpoint = (width: number): Breakpoint => {
+  if (width >= BREAKPOINTS.xl) return 'xl';
+  if (width >= BREAKPOINTS.lg) return 'lg';
+  if (width >= 768) return 'md';
+  if (width >= 640) return 'sm';
+  return 'xs';
+};
+
+const pickImageSrc = (img: GalleryImage, bp: Breakpoint): string => {
+  if ( ! img.sizes[bp]) return img.src || ""
+
+  return img.sizes[bp];
+};
+
+
 const ImageContainer: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ children, className = '' }) => (
   <div className={`relative w-full h-full overflow-hidden ${className}`}>
     {children}
@@ -42,7 +69,7 @@ const Gallery: React.FC<GalleryProps> = ({
 }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [allThumbs, setAllThumbs] = useState<GalleryImage[]>([]);
+  const [actualImages, setActualImages] = useState<GalleryImage[]>([]);
   const [visibleThumbCount, setVisibleThumbCount] = useState(2); // Default count
 
   // Effect to update visible thumb count on resize
@@ -100,37 +127,51 @@ const Gallery: React.FC<GalleryProps> = ({
   useEffect(() => {
     // Store all potential thumbnails (excluding the main image)
     if (images.length > 1) {
-      setAllThumbs(images.slice(1));
+      setActualImages(images);
     } else {
-      setAllThumbs([]);
+      setActualImages([]);
     }
   }, [images]);
+
+  const [breakpoint, setBreakpoint] = useState<Breakpoint>(() => getBreakpoint(typeof window !== 'undefined' ? window.innerWidth : 0));
+
+  useEffect(() => {
+    const handleResize = () => setBreakpoint(getBreakpoint(window.innerWidth));
+    handleResize(); // Set initial
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+
 
   if (!images || images.length === 0) return null;
 
 
-  const main = images[0];
+  
   // Slice the thumbnails based on the calculated visible count for rendering
-  const visibleThumbs = allThumbs.slice(0, visibleThumbCount);
+  const visibleThumbs = actualImages.slice(1, visibleThumbCount + 1);
+  const main = actualImages[0];
+
 
   return (
     <div className={`w-full h-full ${className}`}>
-      <span>{visibleThumbs.length}</span>
       <div className="flex flex-col md:flex-row h-full">
         {/* Main Image */}
-        <div className="w-full md:w-[60%] xl:w-[50%] h-[66%] md:h-full cursor-pointer" onClick={() => openLightbox(0)}>
-          <ImageContainer>
-            <Image
-              src={main.src}
-              alt={main.alt ?? 'Main image'}
-              fill
-              className="object-cover"
-              loading="eager"
-              priority
-              sizes="(max-width: 768px) 100vw, 66vw"
-            />
-          </ImageContainer>
-        </div>
+        { main && (
+            <div className="w-full md:w-[60%] xl:w-[50%] h-[66%] md:h-full cursor-pointer" onClick={() => openLightbox(0)}>
+            <ImageContainer>
+              <Image
+                src={pickImageSrc(main, breakpoint)}
+                alt={main.alt ?? 'Main image'}
+                fill
+                className="object-cover"
+                loading="eager"
+                priority
+                sizes="(max-width: 768px) 100vw, 66vw"
+              />
+            </ImageContainer>
+          </div>
+        )}
 
         {/* Thumbnails Area */}
         {/* Only render this div if there are actually thumbs to show */}
@@ -145,7 +186,8 @@ const Gallery: React.FC<GalleryProps> = ({
               <div className="h-full cursor-pointer" key={img.src + i} onClick={() => openLightbox(i + 1)}>
                 <ImageContainer>
                   <Image
-                    src={img.src}
+                    src={pickImageSrc(img, breakpoint)}
+
                     alt={img.alt ?? `Thumbnail ${i + 1}`}
                     fill
                     className="object-cover"
@@ -168,7 +210,7 @@ const Gallery: React.FC<GalleryProps> = ({
           <button aria-label="Next image" className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={nextImage}>❯</button>
           <div className="relative w-[calc(100%-8rem)] h-[calc(100%-6rem)]">
             <Image
-              src={images[currentIndex].src}
+              src={pickImageSrc(images[currentIndex], breakpoint)}
               alt={images[currentIndex].alt ?? 'Image'}
               fill
               className="object-contain"
