@@ -23,8 +23,8 @@ export default function IndexPage({params: {locale}}: Props) {
         </div>
         <div className="w-full h-[50vh] sm:h-[60vh] xl:h-[60vh] overflow-y-hidden mb-20">
           <Gallery
-            images={new Array(6).fill(true).map((_, i) => ({
-              src: `/images/components/gallery/${6-i}.png`,
+            images={new Array(7).fill(true).map((_, i) => ({
+              src: `/images/components/gallery/${7-i}.png`,
               alt: 'image ' + (6-i).toString(),
               caption: 'Caption text for image ' + (6-i).toString(),
             }))}

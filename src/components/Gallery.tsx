@@ -14,6 +14,22 @@ interface GalleryProps {
   className?: string;
 }
 
+// Tailwind breakpoints (adjust if your config differs)
+const BREAKPOINTS = {
+  lg: 1024,
+  xl: 1280,
+};
+
+const getVisibleThumbCount = (width: number): number => {
+  if (width >= BREAKPOINTS.xl) {
+    return 6; // xl: 6 thumbs
+  } else if (width >= BREAKPOINTS.lg) {
+    return 4; // lg: 4 thumbs
+  }
+  return 2; // default: 2 thumbs
+};
+
+
 const ImageContainer: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ children, className = '' }) => (
   <div className={`relative w-full h-full overflow-hidden ${className}`}>
     {children}
@@ -26,6 +42,23 @@ const Gallery: React.FC<GalleryProps> = ({
 }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [allThumbs, setAllThumbs] = useState<GalleryImage[]>([]);
+  const [visibleThumbCount, setVisibleThumbCount] = useState(2); // Default count
+
+  // Effect to update visible thumb count on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setVisibleThumbCount(getVisibleThumbCount(window.innerWidth));
+    };
+
+    // Set initial count
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []); // Empty dependency array ensures this runs only on mount and cleanup
 
   const openLightbox = (index: number) => {
     setCurrentIndex(index);
@@ -63,14 +96,28 @@ const Gallery: React.FC<GalleryProps> = ({
     };
   }, [lightboxOpen, nextImage, prevImage]);
 
+
+  useEffect(() => {
+    // Store all potential thumbnails (excluding the main image)
+    if (images.length > 1) {
+      setAllThumbs(images.slice(1));
+    } else {
+      setAllThumbs([]);
+    }
+  }, [images]);
+
   if (!images || images.length === 0) return null;
 
+
   const main = images[0];
-  const thumbs = images.slice(1);
+  // Slice the thumbnails based on the calculated visible count for rendering
+  const visibleThumbs = allThumbs.slice(0, visibleThumbCount);
 
   return (
     <div className={`w-full h-full ${className}`}>
+      <span>{visibleThumbs.length}</span>
       <div className="flex flex-col md:flex-row h-full">
+        {/* Main Image */}
         <div className="w-full md:w-[60%] xl:w-[50%] h-[66%] md:h-full cursor-pointer" onClick={() => openLightbox(0)}>
           <ImageContainer>
             <Image
@@ -85,10 +132,17 @@ const Gallery: React.FC<GalleryProps> = ({
           </ImageContainer>
         </div>
 
-        {thumbs.length > 0 && (
-          <div className="flex flex-wrap flex-1 md:flex-col h-[34%] md:h-full overflow-hidden">
-            {thumbs.map((img, i) => (
-              <div className="w-[50%] md:w-full xl:w-[50%] h-full md:h-[50%] cursor-pointer" key={img.src + i} onClick={() => openLightbox(i + 1)}>
+        {/* Thumbnails Area */}
+        {/* Only render this div if there are actually thumbs to show */}
+        {visibleThumbs.length > 0 && (
+          // Note: The grid classes define layout structure, not the number of items.
+          // This will show *up to* 2, 4, or 6 items within the defined grid.
+          // The layout might look sparse on larger screens if few images are provided.
+          <div className="flex flex-1 md:grid md:grid-cols-1 md:grid-rows-2 lg:grid-cols-2 xl:grid-cols-3 overflow-y-scroll">
+            {visibleThumbs.map((img, i) => (
+              // Calculate the correct original index for the lightbox
+              // The index `i` is relative to `visibleThumbs`, but we need the index within the full `images` array
+              <div className="h-full cursor-pointer" key={img.src + i} onClick={() => openLightbox(i + 1)}>
                 <ImageContainer>
                   <Image
                     src={img.src}
@@ -105,34 +159,45 @@ const Gallery: React.FC<GalleryProps> = ({
         )}
       </div>
 
+      {/* Lightbox */}
       {lightboxOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-          <button className="absolute top-4 right-4 text-white text-2xl" onClick={closeLightbox}>✕</button>
-          <button className="absolute left-4 text-white text-2xl" onClick={prevImage}>❮</button>
-          <button className="absolute right-4 text-white text-2xl" onClick={nextImage}>❯</button>
-          <div className="relative w-[90%] h-[95%]">
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center z-50">
+
+          <button aria-label="Close lightbox" className="absolute top-4 right-4 text-white text-2xl z-10" onClick={closeLightbox}>✕</button>
+          <button aria-label="Previous image" className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={prevImage}>❮</button>
+          <button aria-label="Next image" className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={nextImage}>❯</button>
+          <div className="relative w-[calc(100%-8rem)] h-[calc(100%-6rem)]">
             <Image
               src={images[currentIndex].src}
-              alt={images[currentIndex].alt ?? 'Lightbox image'}
+              alt={images[currentIndex].alt ?? 'Image'}
               fill
               className="object-contain"
-              loading="eager"
-              priority
+              loading="eager" // Load lightbox image eagerly when opened
+              priority={true}   // Prioritize loading lightbox image
               sizes="90vw"
             />
-            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white text-center">
-              {images[currentIndex].caption || images[currentIndex].alt}
+          </div>
+
+          <footer className="w-full h-12 flex flex-col items-center justify-center gap-2 mt-1 absolute bottom-2">
+            {/* Caption */}
+            {(images[currentIndex].caption || images[currentIndex].alt) && (
+               <div className="text-sm text-gray-200 px-4 text-center truncate">
+                {images[currentIndex].caption || images[currentIndex].alt}
+               </div>
+            )}
+            {/* Pagination Dots */}
+            <div className="pagination flex items-center justify-center gap-1.5">
+              {images.map((_, index) => (
+                <button
+                  key={index}
+                  aria-label={`Go to image ${index + 1}`}
+                  className={`w-2 h-2 rounded-full ${index === currentIndex ? 'bg-white' : 'bg-gray-600'} transition-colors duration-200 hover:bg-gray-400`}
+                  onClick={() => setCurrentIndex(index)}
+                />
+              ))}
             </div>
-          </div>
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-            {images.map((_, index) => (
-              <button
-                key={index}
-                className={`w-3 h-3 rounded-full ${index === currentIndex ? 'bg-white' : 'bg-gray-400'}`}
-                onClick={() => setCurrentIndex(index)}
-              />
-            ))}
-          </div>
+          </footer>
+
         </div>
       )}
     </div>
