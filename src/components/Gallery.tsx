@@ -182,7 +182,7 @@ const Gallery: React.FC<GalleryProps> = ({
               <div className="flex-1 h-full cursor-pointer" key={img.src + i} onClick={() => openLightbox(i + 1)}>
                 <ImageContainer>
                   <Image
-                    src={pickImageSrc(img, breakpoint)}
+                    src={pickImageSrc(img, 'xs')}
 
                     alt={img.alt ?? `Thumbnail ${i + 1}`}
                     fill
