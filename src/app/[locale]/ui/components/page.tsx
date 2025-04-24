@@ -24,13 +24,13 @@ export default function IndexPage({params: {locale}}: Props) {
         <div className="w-full h-[50vh] sm:h-[60vh] xl:h-[60vh] overflow-y-hidden mb-20">
           <Gallery
             images={new Array(7).fill(true).map((_, i) => ({
-              src: `/images/components/gallery/${7-i}.png`,
+              src: `/images/components/gallery/responsiveimages/xl/${7-i}.png`,
               sizes: {
-                xl: `/images/components/gallery/${7-i}.png`,
-                lg: `/images/components/gallery/${7-i}.png`,
-                md: `/images/components/gallery/${7-i}.png`,
-                sm: `/images/components/gallery/${7-i}.png`,
-                xs: `/images/components/gallery/${7-i}.png`
+                xl: `/images/components/gallery/responsiveimages/xl/${7-i}.png`,
+                lg: `/images/components/gallery/responsiveimages/lg/${7-i}.png`,
+                md: `/images/components/gallery/responsiveimages/md/${7-i}.png`,
+                sm: `/images/components/gallery/responsiveimages/sm/${7-i}.png`,
+                xs: `/images/components/gallery/responsiveimages/xs/${7-i}.png`
               },
               alt: 'image ' + (6-i).toString(),
               caption: 'Caption text for image ' + (6-i).toString(),
