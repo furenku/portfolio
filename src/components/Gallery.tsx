@@ -179,7 +179,7 @@ const Gallery: React.FC<GalleryProps> = ({
             {visibleThumbs.map((img, i) => (
               // Calculate the correct original index for the lightbox
               // The index `i` is relative to `visibleThumbs`, but we need the index within the full `images` array
-              <div className="h-full cursor-pointer" key={img.src + i} onClick={() => openLightbox(i + 1)}>
+              <div className="flex-1 h-full cursor-pointer" key={img.src + i} onClick={() => openLightbox(i + 1)}>
                 <ImageContainer>
                   <Image
                     src={pickImageSrc(img, breakpoint)}
