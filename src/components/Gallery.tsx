@@ -7,10 +7,6 @@ type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 
 
-type ImageSize = {
-  // Store source for each img size
-  [key in Breakpoint]: string
-}
 
 export interface GalleryImage {
   src: string;
