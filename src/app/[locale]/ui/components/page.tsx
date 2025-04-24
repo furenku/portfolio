@@ -23,8 +23,6 @@ export default async function IndexPage({ params: { locale } }: Props) {
 
   // Server-side translation function
   const t = await getTranslations({ locale, namespace: 'sections.ui.components' });
-
-  console.log("\n\nimages", images);
   
 
   return (
@@ -38,18 +36,7 @@ export default async function IndexPage({ params: { locale } }: Props) {
         </div>
         <div className="w-full h-[50vh] sm:h-[60vh] xl:h-[60vh] overflow-y-hidden mb-20">
           <Gallery
-            images={new Array(7).fill(true).map((_, i) => ({
-              src: `https://picsum.photos/seed/${(Math.random()*99999).toString()}/480`,
-              sizes: {
-                xl: `https://picsum.photos/seed/${(Math.random()*99999).toString()}1/920`,
-                lg: `https://picsum.photos/seed/${(Math.random()*99999).toString()}1/024`,
-                md: `https://picsum.photos/seed/${(Math.random()*99999).toString()}/768`,
-                sm: `https://picsum.photos/seed/${(Math.random()*99999).toString()}/568`,
-                xs: `https://picsum.photos/seed/${(Math.random()*99999).toString()}/480`
-              },
-              alt: 'image ' + (6-i).toString(),
-              caption: 'Caption text for image ' + (6-i).toString(),
-            }))}
+            images={images}
           />
         </div>
       </div>      

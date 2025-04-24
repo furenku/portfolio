@@ -9,16 +9,14 @@ type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 
 
-
-export interface GalleryImage {
-  src: string;
+export type GalleryImage = {
+  base64: string;
   alt?: string;
   caption?: string;
-  sizes: {
-    [key in Breakpoint]: string;
-  },
-  base64: string
-}
+} & (
+  | { src: string; sizes?: { [key in Breakpoint]: string } }
+  | { sizes: { [key in Breakpoint]: string }; src?: string }
+);
 
 interface GalleryProps {
   images: GalleryImage[];
@@ -50,18 +48,15 @@ const getBreakpoint = (width: number): Breakpoint => {
 };
 
 const pickImageSrc = (img: GalleryImage, bp: Breakpoint): string => {
+  
+  if( ! Array.isArray(img.sizes) ) return img.src || ""
+  
   if ( ! img.sizes[bp]) return img.src || ""
 
   return img.sizes[bp];
+
 };
 
-
-const getBase64 = async (url: string): Promise<string> => {
-  const res = await fetch(url);
-  const buffer = await res.arrayBuffer();
-  const base64 = Buffer.from(buffer).toString('base64');
-  return `data:image/jpeg;base64,${base64}`;
-};
 
 const AnimatedBlurImage = ({ src, alt, blurDataURL } : { src: string, alt: string, blurDataURL: string  }) => {
   const [isLoaded, setIsLoaded] = useState(false)
@@ -81,7 +76,7 @@ const AnimatedBlurImage = ({ src, alt, blurDataURL } : { src: string, alt: strin
           loading="lazy"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           placeholder="blur"
-          blurDataURL={'data:image/jpeg;base64,'+blurDataURL||'/9j/4AAQSkZJRgABA...'}
+          blurDataURL={blurDataURL}
           onLoadingComplete={() => setIsLoaded(true)}
         />
       </motion.div>
@@ -195,6 +190,7 @@ const Gallery: React.FC<GalleryProps> = ({
               <AnimatedBlurImage
                 src={pickImageSrc(main, breakpoint)}
                 alt={main.alt ?? 'Main image'} 
+                blurDataURL={main.base64}
               />
             </ImageContainer>
           </div>
@@ -210,12 +206,12 @@ const Gallery: React.FC<GalleryProps> = ({
             {visibleThumbs.map((img, i) => (
               // Calculate the correct original index for the lightbox
               // The index `i` is relative to `visibleThumbs`, but we need the index within the full `images` array
-              <div className="flex-1 h-full cursor-pointer" key={img.src + i} onClick={() => openLightbox(i + 1)}>
+              <div className="flex-1 h-full cursor-pointer" key={i} onClick={() => openLightbox(i + 1)}>
                 <ImageContainer>
                   <AnimatedBlurImage
                     src={pickImageSrc(img, 'xs')}
                     alt={img.alt ?? `Thumbnail ${i + 1}`}
-                    blurDataURL={ getBase64(img) }                                                                           
+                    blurDataURL={ img.base64 }                                                                           
                   />
                 </ImageContainer>
               </div>
@@ -235,12 +231,7 @@ const Gallery: React.FC<GalleryProps> = ({
             <AnimatedBlurImage
               src={pickImageSrc(images[currentIndex], breakpoint)}
               alt={images[currentIndex].alt ?? 'Image'}
-              fill
-              className="object-contain"
-              loading="lazy" // Load lightbox image lazyly when opened              ={true}   // Prioritize loading lightbox image
-              sizes="90vw"
-              placeholder="blur"
-              blurDataURL={`/images/components/gallery/responsiveimages/xs/1.png`}
+              blurDataURL={ images[currentIndex].base64 }
             />
           </div>
 
