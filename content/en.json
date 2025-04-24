@@ -154,8 +154,13 @@
             "title": "UI Work",
             "description": "Development of intuitive and attractive user interfaces for web and mobile applications.",
             "components": {
-                "gallery": {
-                    "title": "Gallery"
+                "title": "Components",
+                "description": "Reusable UI components for web applications.",
+                "items": {
+                    "gallery": {
+                        "title": "Gallery",
+                        "description": "Responsive image gallery with lazy loading and smooth transitions."
+                    }
                 }
             }
         }

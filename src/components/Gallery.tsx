@@ -2,6 +2,8 @@
 
 import Image from 'next/image';
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion'
+
 
 type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -14,7 +16,8 @@ export interface GalleryImage {
   caption?: string;
   sizes: {
     [key in Breakpoint]: string;
-  }
+  },
+  base64: string
 }
 
 interface GalleryProps {
@@ -52,6 +55,39 @@ const pickImageSrc = (img: GalleryImage, bp: Breakpoint): string => {
   return img.sizes[bp];
 };
 
+
+const getBase64 = async (url: string): Promise<string> => {
+  const res = await fetch(url);
+  const buffer = await res.arrayBuffer();
+  const base64 = Buffer.from(buffer).toString('base64');
+  return `data:image/jpeg;base64,${base64}`;
+};
+
+const AnimatedBlurImage = ({ src, alt, blurDataURL } : { src: string, alt: string, blurDataURL: string  }) => {
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  return (
+    <div className="overflow-hidden rounded-2xl w-full max-w-md">
+      <motion.div
+        initial={{ opacity: 0.6 }}
+        animate={{ opacity: isLoaded ? 1 : 0.6 }}
+        transition={{ duration: 0.4 }}
+      >
+        <Image
+          src={src}
+          alt={alt}
+          className="object-cover"
+          fill
+          loading="lazy"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          placeholder="blur"
+          blurDataURL={'data:image/jpeg;base64,'+blurDataURL||'/9j/4AAQSkZJRgABA...'}
+          onLoadingComplete={() => setIsLoaded(true)}
+        />
+      </motion.div>
+    </div>
+  )
+}
 
 const ImageContainer: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ children, className = '' }) => (
   <div className={`relative w-full h-full overflow-hidden ${className}`}>
@@ -156,14 +192,9 @@ const Gallery: React.FC<GalleryProps> = ({
         { main && (
             <div className="w-full md:w-[60%] xl:w-[50%] h-[66%] md:h-full cursor-pointer" onClick={() => openLightbox(0)}>
             <ImageContainer>
-              <Image
+              <AnimatedBlurImage
                 src={pickImageSrc(main, breakpoint)}
-                alt={main.alt ?? 'Main image'}
-                fill
-                className="object-cover"
-                loading="eager"
-                priority
-                sizes="(max-width: 768px) 100vw, 66vw"
+                alt={main.alt ?? 'Main image'} 
               />
             </ImageContainer>
           </div>
@@ -181,14 +212,10 @@ const Gallery: React.FC<GalleryProps> = ({
               // The index `i` is relative to `visibleThumbs`, but we need the index within the full `images` array
               <div className="flex-1 h-full cursor-pointer" key={img.src + i} onClick={() => openLightbox(i + 1)}>
                 <ImageContainer>
-                  <Image
+                  <AnimatedBlurImage
                     src={pickImageSrc(img, 'xs')}
-
                     alt={img.alt ?? `Thumbnail ${i + 1}`}
-                    fill
-                    className="object-cover"
-                    loading="lazy"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 16vw, 11vw"
+                    blurDataURL={ getBase64(img) }                                                                           
                   />
                 </ImageContainer>
               </div>
@@ -205,14 +232,15 @@ const Gallery: React.FC<GalleryProps> = ({
           <button aria-label="Previous image" className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={prevImage}>❮</button>
           <button aria-label="Next image" className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={nextImage}>❯</button>
           <div className="relative w-[calc(100%-8rem)] h-[calc(100%-6rem)]">
-            <Image
+            <AnimatedBlurImage
               src={pickImageSrc(images[currentIndex], breakpoint)}
               alt={images[currentIndex].alt ?? 'Image'}
               fill
               className="object-contain"
-              loading="eager" // Load lightbox image eagerly when opened
-              priority={true}   // Prioritize loading lightbox image
+              loading="lazy" // Load lightbox image lazyly when opened              ={true}   // Prioritize loading lightbox image
               sizes="90vw"
+              placeholder="blur"
+              blurDataURL={`/images/components/gallery/responsiveimages/xs/1.png`}
             />
           </div>
 
