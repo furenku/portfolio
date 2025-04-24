@@ -1,24 +1,23 @@
 "use client";
 
 import Image from 'next/image';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion'
+import type { CSSProperties } from 'react'; // Import CSSProperties
 
 
 type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 
 
-
-export interface GalleryImage {
-  src: string;
+export type GalleryImage = {
+  base64: string;
   alt?: string;
   caption?: string;
-  sizes: {
-    [key in Breakpoint]: string;
-  },
-  base64: string
-}
+} & (
+  | { src: string; sizes?: { [key in Breakpoint]: string } }
+  | { sizes: { [key in Breakpoint]: string }; src?: string }
+);
 
 interface GalleryProps {
   images: GalleryImage[];
@@ -27,6 +26,9 @@ interface GalleryProps {
 
 // Tailwind breakpoints (adjust if your config differs)
 const BREAKPOINTS = {
+  xs: 0,
+  sm: 480,
+  md: 768,
   lg: 1024,
   xl: 1280,
 };
@@ -42,28 +44,32 @@ const getVisibleThumbCount = (width: number): number => {
 
 
 const getBreakpoint = (width: number): Breakpoint => {
-  if (width >= BREAKPOINTS.xl) return 'xl';
-  if (width >= BREAKPOINTS.lg) return 'lg';
-  if (width >= 768) return 'md';
-  if (width >= 640) return 'sm';
-  return 'xs';
+
+  let bp: Breakpoint = 'xs';
+
+  Object.entries(BREAKPOINTS).forEach(([key, value]) => {
+    if (width >= value) {
+      bp = key as Breakpoint;
+    }
+  });
+
+  return bp;
+
 };
 
 const pickImageSrc = (img: GalleryImage, bp: Breakpoint): string => {
+  
+  if( ! img.sizes ) return img.src || ""
+  
+
   if ( ! img.sizes[bp]) return img.src || ""
 
   return img.sizes[bp];
+
 };
 
 
-const getBase64 = async (url: string): Promise<string> => {
-  const res = await fetch(url);
-  const buffer = await res.arrayBuffer();
-  const base64 = Buffer.from(buffer).toString('base64');
-  return `data:image/jpeg;base64,${base64}`;
-};
-
-const AnimatedBlurImage = ({ src, alt, blurDataURL } : { src: string, alt: string, blurDataURL: string  }) => {
+const AnimatedBlurImage = ({ src, alt, blurDataURL, objectFit='cover'  } : { src: string, alt: string, blurDataURL: string, objectFit?: CSSProperties['objectFit']  }) => {
   const [isLoaded, setIsLoaded] = useState(false)
 
   return (
@@ -76,13 +82,15 @@ const AnimatedBlurImage = ({ src, alt, blurDataURL } : { src: string, alt: strin
         <Image
           src={src}
           alt={alt}
-          className="object-cover"
           fill
           loading="lazy"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           placeholder="blur"
-          blurDataURL={'data:image/jpeg;base64,'+blurDataURL||'/9j/4AAQSkZJRgABA...'}
+          blurDataURL={blurDataURL}
           onLoadingComplete={() => setIsLoaded(true)}
+          style={{
+            objectFit
+          }}
         />
       </motion.div>
     </div>
@@ -99,10 +107,20 @@ const Gallery: React.FC<GalleryProps> = ({
   images,
   className = '',
 }) => {
+
+
+  console.log("images", images);
+
+
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [actualImages, setActualImages] = useState<GalleryImage[]>([]);
   const [visibleThumbCount, setVisibleThumbCount] = useState(2); // Default count
+
+
+
+  const mainImageRef = useRef<HTMLDivElement>(null);
+  
 
   // Effect to update visible thumb count on resize
   useEffect(() => {
@@ -185,16 +203,21 @@ const Gallery: React.FC<GalleryProps> = ({
   const main = actualImages[0];
 
 
+
   return (
     <div className={`w-full h-full ${className}`}>
       <div className="flex flex-col md:flex-row h-full">
         {/* Main Image */}
         { main && (
-            <div className="w-full md:w-[60%] xl:w-[50%] h-[66%] md:h-full cursor-pointer" onClick={() => openLightbox(0)}>
+            <div className="main-image w-full md:w-[60%] xl:w-[50%] h-[66%] md:h-full cursor-pointer" onClick={() => openLightbox(0)}
+            ref={mainImageRef}
+            >
             <ImageContainer>
               <AnimatedBlurImage
-                src={pickImageSrc(main, breakpoint)}
+                src={pickImageSrc(main, 
+                  getBreakpoint(mainImageRef?.current?.offsetWidth ?? 0))}
                 alt={main.alt ?? 'Main image'} 
+                blurDataURL={main.base64}                
               />
             </ImageContainer>
           </div>
@@ -210,12 +233,12 @@ const Gallery: React.FC<GalleryProps> = ({
             {visibleThumbs.map((img, i) => (
               // Calculate the correct original index for the lightbox
               // The index `i` is relative to `visibleThumbs`, but we need the index within the full `images` array
-              <div className="flex-1 h-full cursor-pointer" key={img.src + i} onClick={() => openLightbox(i + 1)}>
+              <div className="flex-1 h-full cursor-pointer" key={i} onClick={() => openLightbox(i + 1)}>
                 <ImageContainer>
                   <AnimatedBlurImage
                     src={pickImageSrc(img, 'xs')}
                     alt={img.alt ?? `Thumbnail ${i + 1}`}
-                    blurDataURL={ getBase64(img) }                                                                           
+                    blurDataURL={ img.base64 }  
                   />
                 </ImageContainer>
               </div>
@@ -226,25 +249,21 @@ const Gallery: React.FC<GalleryProps> = ({
 
       {/* Lightbox */}
       {lightboxOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col gap-4 items-center justify-center z-50">
 
           <button aria-label="Close lightbox" className="absolute top-4 right-4 text-white text-2xl z-10" onClick={closeLightbox}>✕</button>
           <button aria-label="Previous image" className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={prevImage}>❮</button>
           <button aria-label="Next image" className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={nextImage}>❯</button>
-          <div className="relative w-[calc(100%-8rem)] h-[calc(100%-6rem)]">
+          <div className="relative w-[calc(100%-8rem)] h-[calc(100%-8rem)]">
             <AnimatedBlurImage
               src={pickImageSrc(images[currentIndex], breakpoint)}
               alt={images[currentIndex].alt ?? 'Image'}
-              fill
-              className="object-contain"
-              loading="lazy" // Load lightbox image lazyly when opened              ={true}   // Prioritize loading lightbox image
-              sizes="90vw"
-              placeholder="blur"
-              blurDataURL={`/images/components/gallery/responsiveimages/xs/1.png`}
+              blurDataURL={ images[currentIndex].base64 }
+              objectFit='contain'
             />
           </div>
 
-          <footer className="w-full h-12 flex flex-col items-center justify-center gap-2 mt-1 absolute bottom-2">
+          <footer className="w-full h-12 flex flex-col items-center justify-center gap-2 absolute bottom-2">
             {/* Caption */}
             {(images[currentIndex].caption || images[currentIndex].alt) && (
                <div className="text-sm text-gray-200 px-4 text-center truncate">

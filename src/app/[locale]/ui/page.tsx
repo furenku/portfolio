@@ -12,7 +12,7 @@ export default function IndexPage({params: {locale}}: Props) {
   const t = useTranslations('sections.ui');
 
   return (
-    <HomeLayout>
+    <HomeLayout images={[]}>
       {/* <BackgroundAnimation /> */}
       <h1 className="text-3xl font-semibold leading-tight tracking-tight text-white md:text-5xl">
         {t('title')}
