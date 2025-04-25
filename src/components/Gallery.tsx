@@ -1,9 +1,11 @@
 "use client";
 
 import Image from 'next/image';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion'
+import React, { useState, useEffect, useCallback } from 'react';
 import type { CSSProperties } from 'react'; // Import CSSProperties
+import useMeasure from "react-use-measure";
+import { motion } from 'framer-motion'
+
 
 
 type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -117,10 +119,18 @@ const Gallery: React.FC<GalleryProps> = ({
   const [actualImages, setActualImages] = useState<GalleryImage[]>([]);
   const [visibleThumbCount, setVisibleThumbCount] = useState(2); // Default count
 
+  const [mainImageRef, bounds] = useMeasure();
 
+  const width = bounds.width;
 
-  const mainImageRef = useRef<HTMLDivElement>(null);
+  let mainBreakpoint: Breakpoint | undefined = undefined;
+
+  if (width) {
+    mainBreakpoint = getBreakpoint(width * 1.25);
+  }
+
   
+
 
   // Effect to update visible thumb count on resize
   useEffect(() => {
@@ -212,14 +222,17 @@ const Gallery: React.FC<GalleryProps> = ({
             <div className="main-image w-full md:w-[60%] xl:w-[50%] h-[66%] md:h-full cursor-pointer" onClick={() => openLightbox(0)}
             ref={mainImageRef}
             >
-            <ImageContainer>
-              <AnimatedBlurImage
-                src={pickImageSrc(main, 
-                  getBreakpoint(mainImageRef?.current?.offsetWidth ?? 0))}
-                alt={main.alt ?? 'Main image'} 
-                blurDataURL={main.base64}                
-              />
-            </ImageContainer>
+              {
+                mainBreakpoint ? (
+                  <ImageContainer><AnimatedBlurImage
+                    src={pickImageSrc(main, mainBreakpoint)}
+                    alt={main.alt ?? 'Main image'}
+                    blurDataURL={main.base64}
+                  /></ImageContainer>
+                ) : (
+                  <div className="w-full h-full bg-gray-200 animate-pulse"></div>
+              )}
+            
           </div>
         )}
 
