@@ -35,11 +35,11 @@ export async function GET() {
 
     const rawImages: GalleryImage[] = new Array(7).fill(true).map((_, i) => ({
         sizes: {
-          xl: `${host}/images/components/gallery/responsiveimages/xl/${i+1}.png`,
-          lg: `${host}/images/components/gallery/responsiveimages/lg/${i+1}.png`,
-          md: `${host}/images/components/gallery/responsiveimages/md/${i+1}.png`,
-          sm: `${host}/images/components/gallery/responsiveimages/sm/${i+1}.png`,
-          xs: `${host}/images/components/gallery/responsiveimages/xs/${i+1}.png`,
+          xl: `${host}/images/components/gallery/responsiveimages/xl/${i+1}.avif`,
+          lg: `${host}/images/components/gallery/responsiveimages/lg/${i+1}.avif`,
+          md: `${host}/images/components/gallery/responsiveimages/md/${i+1}.avif`,
+          sm: `${host}/images/components/gallery/responsiveimages/sm/${i+1}.avif`,
+          xs: `${host}/images/components/gallery/responsiveimages/xs/${i+1}.avif`,
           // xl: `https://picsum.photos/seed/${(Math.random()*99999).toString()}/1920`,
           // lg: `https://picsum.photos/seed/${(Math.random()*99999).toString()}/1024`,
           // md: `https://picsum.photos/seed/${(Math.random()*99999).toString()}/768`,
@@ -52,8 +52,6 @@ export async function GET() {
         caption: 'Caption text for image ' + (i+1).toString()
     }))  
     
-
-    console.log("\n\ntest\n\n", rawImages[0].sizes);
     
 
     const images = []
@@ -67,10 +65,13 @@ export async function GET() {
         );
         
         const base64 = await getBase64FromFile(base64Path);
+        
         images.push({
             ...rawImage,
             base64: base64 ? `data:image/jpeg;base64,${base64}` : ""
         })
+
+        
     }
     
     
