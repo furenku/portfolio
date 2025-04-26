@@ -148,10 +148,10 @@ export async function GET() {
       const seed = (Math.random() * 99999).toString();
       return {
         sizes: {
-          xl: `https://picsum.photos/seed/${seed}/1920/1080`,
-          lg: `https://picsum.photos/seed/${seed}/1024/578`,
-          md: `https://picsum.photos/seed/${seed}/768/432`,
-          sm: `https://picsum.photos/seed/${seed}/568/320`,
+          // xl: `https://picsum.photos/seed/${seed}/1920/1080`,
+          // lg: `https://picsum.photos/seed/${seed}/1024/578`,
+          // md: `https://picsum.photos/seed/${seed}/768/432`,
+          // sm: `https://picsum.photos/seed/${seed}/568/320`,
           xs: `https://picsum.photos/seed/${seed}/480/270`
         },
         preview: `https://picsum.photos/seed/${seed}/32/18`,
