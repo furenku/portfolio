@@ -10,16 +10,26 @@ import { motion } from 'framer-motion'
 
 type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
+export type Dimensions = {
+  width?: number;
+  height?: number;
+}
 
+export type ImageSize = {
+  src: string
+} & Dimensions;
 
 export type GalleryImage = {
-  base64: string;
   alt?: string;
   caption?: string;
+  preview?: string;
 } & (
-  | { src: string; sizes?: { [key in Breakpoint]: string } }
-  | { sizes: { [key in Breakpoint]: string }; src?: string }
-);
+  | { src: string; sizes?: { [key in Breakpoint]: ImageSize } }
+  | { sizes: {
+    [key in Breakpoint]: ImageSize
+  };
+  src?: string }
+) & Dimensions;
 
 interface GalleryProps {
   images: GalleryImage[];
@@ -59,13 +69,10 @@ const getBreakpoint = (width: number): Breakpoint => {
 
 };
 
-const pickImageSrc = (img: GalleryImage, bp: Breakpoint): string => {
+const pickImageSize = (img: GalleryImage, bp: Breakpoint): ImageSize | undefined => {
   
-  if( ! img.sizes ) return img.src || ""
+  if( ! img.sizes || ! img.sizes[bp] ) return
   
-
-  if ( ! img.sizes[bp]) return img.src || ""
-
   return img.sizes[bp];
 
 };
@@ -75,25 +82,28 @@ const AnimatedBlurImage = ({ src, alt, blurDataURL, objectFit='cover'  } : { src
   const [isLoaded, setIsLoaded] = useState(false)
 
   return (
-    <div className="overflow-hidden rounded-2xl w-full max-w-md">
+    <div className="overflow-hidden rounded-2xl w-full max-w-md bg-gray-200">
       <motion.div
         initial={{ opacity: 0.6 }}
         animate={{ opacity: isLoaded ? 1 : 0.6 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.4 }}        
       >
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          loading="lazy"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          placeholder="blur"
-          blurDataURL={blurDataURL}
-          onLoadingComplete={() => setIsLoaded(true)}
-          style={{
-            objectFit
-          }}
-        />
+
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            loading="lazy"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            placeholder={ blurDataURL ? "blur" : "empty" }
+            blurDataURL={blurDataURL}
+            onLoadingComplete={() => setIsLoaded(true)}
+            style={{
+              objectFit
+            }}
+          />
+
+
       </motion.div>
     </div>
   )
@@ -225,9 +235,9 @@ const Gallery: React.FC<GalleryProps> = ({
               {
                 mainBreakpoint ? (
                   <ImageContainer><AnimatedBlurImage
-                    src={pickImageSrc(main, mainBreakpoint)}
+                    src={pickImageSize(main, mainBreakpoint)?.src || ''}
                     alt={main.alt ?? 'Main image'}
-                    blurDataURL={main.base64}
+                    blurDataURL={main.preview || "" }
                   /></ImageContainer>
                 ) : (
                   <div className="w-full h-full bg-gray-200 animate-pulse"></div>
@@ -249,9 +259,11 @@ const Gallery: React.FC<GalleryProps> = ({
               <div className="flex-1 h-full cursor-pointer" key={i} onClick={() => openLightbox(i + 1)}>
                 <ImageContainer>
                   <AnimatedBlurImage
-                    src={pickImageSrc(img, 'xs')}
+                    src={
+                      pickImageSize(img, 'xs')?.src || ""
+                    }
                     alt={img.alt ?? `Thumbnail ${i + 1}`}
-                    blurDataURL={ img.base64 }  
+                    blurDataURL={ img.preview || "" }  
                   />
                 </ImageContainer>
               </div>
@@ -269,9 +281,9 @@ const Gallery: React.FC<GalleryProps> = ({
           <button aria-label="Next image" className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={nextImage}>❯</button>
           <div className="relative w-[calc(100%-8rem)] h-[calc(100%-8rem)]">
             <AnimatedBlurImage
-              src={pickImageSrc(images[currentIndex], breakpoint)}
+              src={pickImageSize(images[currentIndex], breakpoint)?.src || "" }
               alt={images[currentIndex].alt ?? 'Image'}
-              blurDataURL={ images[currentIndex].base64 }
+              blurDataURL={ images[currentIndex].preview || "" }
               objectFit='contain'
             />
           </div>
