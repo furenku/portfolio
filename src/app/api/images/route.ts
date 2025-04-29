@@ -1,9 +1,4 @@
-import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-import sharp from 'sharp';
-import { fileTypeFromBuffer } from 'file-type';
-import { GalleryImage } from '@/components/Gallery';
+import { NextRequest, NextResponse } from 'next/server';
 
 type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -15,129 +10,7 @@ export interface ApiImage {
     [key in Breakpoint]: string;
   },
   preview?: string;
-}
 
-interface ImageData {
-  base64?: string;
-  width?: number;
-  height?: number;
-}
-
-
-
-
-
-// For local files
-async function getBase64File(filePath: string): Promise<string> {
-  try {
-    const imageBuffer = await fs.readFile(filePath);
-    const base64 = imageBuffer.toString('base64');
-    const metadata = await sharp(imageBuffer).metadata();
-
-    return `data:image/${metadata.format};base64,${base64}`
-      
-  } catch (error) {
-    console.error(`Error processing image file ${filePath}:`, error);
-    throw new Error(`Failed to get image data from file: ${filePath}`);
-  }
-}
-
-// For URLs
-async function getBase64Url(url: string): Promise<string> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
-    }
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    
-
-    const typeInfo = await fileTypeFromBuffer(buffer);
-    let mimeType: string | undefined = typeInfo?.mime;
-    if (!mimeType) {
-      const contentTypeHeader = response.headers.get('content-type');
-      if (contentTypeHeader) {
-        mimeType = contentTypeHeader.split(';')[0].trim();
-        console.warn(`Could not determine type from buffer for ${url}, using Content-Type header: ${mimeType}`);
-      }
-    }
-    if (!mimeType) {
-      console.error(`Could not determine MIME type for URL: ${url} (neither from buffer nor headers)`);
-      return ""
-    }
-    const base64Data= buffer.toString('base64');
-    const base64 = `data:${mimeType};base64,${base64Data}`;
-    return base64
-  } catch (error) {
-    console.error(`Error fetching or processing image from URL: ${url}`, error);
-    return ""
-  }
-}
-
-
-
-
-
-
-// For local files
-async function getImageDataFromFile(filePath: string): Promise<ImageData> {
-  try {
-    const imageBuffer = await fs.readFile(filePath);
-    const metadata = await sharp(imageBuffer).metadata();
-    const base64 = imageBuffer.toString('base64');
-    if (metadata.width === undefined || metadata.height === undefined) {
-      throw new Error(`Could not determine dimensions for image: ${filePath}`);
-    }
-    return {
-      base64: `data:image/${metadata.format};base64,${base64}`,
-      width: metadata.width,
-      height: metadata.height,
-    };
-  } catch (error) {
-    console.error(`Error processing image file ${filePath}:`, error);
-    throw new Error(`Failed to get image data from file: ${filePath}`);
-  }
-}
-
-// For URLs
-async function getImageDataFromUrl(url: string): Promise<ImageData> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
-    }
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    let width: number | undefined = undefined;
-    let height: number | undefined = undefined;
-    try {
-      const metadata = await sharp(buffer).metadata();
-      width = metadata.width ?? undefined;
-      height = metadata.height ?? undefined;
-    } catch (sharpError) {
-      console.warn(`Could not get dimensions using sharp for ${url}:`, sharpError);
-    }
-    const typeInfo = await fileTypeFromBuffer(buffer);
-    let mimeType: string | undefined = typeInfo?.mime;
-    if (!mimeType) {
-      const contentTypeHeader = response.headers.get('content-type');
-      if (contentTypeHeader) {
-        mimeType = contentTypeHeader.split(';')[0].trim();
-        console.warn(`Could not determine type from buffer for ${url}, using Content-Type header: ${mimeType}`);
-      }
-    }
-    if (!mimeType) {
-      console.error(`Could not determine MIME type for URL: ${url} (neither from buffer nor headers)`);
-      return { base64: undefined, width, height };
-    }
-    const base64Data= buffer.toString('base64');
-    const base64 = `data:${mimeType};base64,${base64Data}`;
-    return { base64, width, height };
-  } catch (error) {
-    console.error(`Error fetching or processing image from URL: ${url}`, error);
-    return { base64: undefined, width: undefined, height: undefined };
-  }
 }
 
 
@@ -146,80 +19,78 @@ import images from "../../../../data/test/images/get.json"
 export async function GET() {
   try {
     
-    return new Response(JSON.stringify(images), { status: 200 });
+    return new NextResponse(JSON.stringify(images), { status: 200 });
 
   } catch (error) {
     console.error('Error fetching images:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch images' }), { status: 500 });
+    return new NextResponse(JSON.stringify({ error: 'Failed to fetch images' }), { status: 500 });
   }
 
 }
 
-// export async function GET() {
-//   try {
-//     const localPreviewBaseDir = path.join(process.cwd(), 'data/test/images/');
 
-//     const rawImages: ApiImage[] = new Array(7).fill(true).map((_, i) => {
-//       const seed = Math.ceil((Math.random() * 99999)).toString();
-//       return {
-//         sizes: {
-//           xl: `https://picsum.photos/seed/${seed}/1920/1080`,
-//           lg: `https://picsum.photos/seed/${seed}/1024/578`,
-//           md: `https://picsum.photos/seed/${seed}/768/432`,
-//           sm: `https://picsum.photos/seed/${seed}/568/320`,
-//           xs: `https://picsum.photos/seed/${seed}/480/270`
-//         },
-//         preview: `https://picsum.photos/seed/${seed}/32/18`,
-//         alt: 'image ' + (i + 1).toString(),
-//         caption: 'Caption text for image ' + (i + 1).toString()
-//       }
-//     });
+export async function POST(req: NextRequest) {
+  // Define your Cloudflare Worker URL (ideally from environment variables)
+  const workerUrl = process.env.CLOUDFLARE_WORKER_URL || `https://imgresize.furenku.workers.dev/`;
 
-//     const images: GalleryImage[] = [];
+  if (!workerUrl) {
+    console.error('CLOUDFLARE_WORKER_URL environment variable is not set.');
+    return NextResponse.json(
+      { error: 'Server configuration error' },
+      { status: 500 }
+    );
+  }
 
-//     for (const rawImage of rawImages) {
-//       const sizesWithInfo: any = {};
-//       for (const [breakpoint, src] of Object.entries(rawImage.sizes)) {
-//         if (src.startsWith('http://') || src.startsWith('https://')) {
-//           const { width, height } = await getImageDataFromUrl(src);
-//           sizesWithInfo[breakpoint] = {
-//             src,
-//             width: width, 
-//             height: height
-//           };
-//         } else {
-//           const localFilePath = path.join(localPreviewBaseDir, src);
-//           const { width, height } = await getImageDataFromFile(localFilePath);
-//           sizesWithInfo[breakpoint] = {
-//             src,
-//             width,
-//             height
-//           };
-//         }
-//       }
+  try {
+    const contentType = req.headers.get('content-type') || '';
+    // Basic check for multipart/form-data
+    if (!contentType.includes('multipart/form-data')) {
+       return NextResponse.json(
+         { error: 'Invalid content type, expected multipart/form-data' },
+         { status: 415 } // Unsupported Media Type
+       );
+    }
 
-//       let preview = '';
+    const formData = await req.formData();
+    const file = formData.get('file') as File | null;
 
-//       if (rawImage.preview) {
-//         if (rawImage.preview.startsWith('http://') || rawImage.preview.startsWith('https://')) {
-//           preview = await getBase64Url(rawImage.preview);
-          
-//         } else {
-//           const localFilePath = path.join(localPreviewBaseDir, rawImage.preview);
-//           preview = await getBase64File(localFilePath);          
-//         }
-//       }
+    if (!file) {
+      return NextResponse.json({ error: 'No file found in form data' }, { status: 400 });
+    }
 
-//       images.push({
-//         ...rawImage,
-//         sizes: sizesWithInfo,
-//         preview
-//       });
-//     }
+    // Prepare data to forward to the worker
+    const workerFormData = new FormData();
+    workerFormData.append('file', file, file.name); // Pass the file with its name
 
-//     return NextResponse.json(images);
-//   } catch (error) {
-//     console.error('Error processing gallery images:', error);
-//     return NextResponse.json({ error: 'Failed to process images' }, { status: 500 });
-//   }
-// }
+    console.log(`Forwarding file "${file.name}" to worker: ${workerUrl}`);
+
+    // Send the file to the Cloudflare Worker
+    const workerResponse = await fetch(workerUrl, {
+      method: 'POST',
+      body: workerFormData,
+      // Let fetch set the Content-Type header automatically for FormData
+    });
+
+    // Log the response from the worker
+    const workerResponseBody = await workerResponse.text(); // Read body as text
+    console.log(`Worker response status: ${workerResponse.status}`);
+    console.log(`Worker response body:\n---\n${workerResponseBody}\n---`);
+
+    // Return a response based on the worker's result
+    return new NextResponse(workerResponseBody, {
+      status: workerResponse.status,
+      headers: {
+        // You might want to proxy some headers from the worker if needed
+        'Content-Type': workerResponse.headers.get('Content-Type') || 'application/json',
+      },
+    });
+
+  } catch (error) {
+    console.error('Error in POST /api/images:', error);
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json(
+      { error: 'Internal server error', details: message },
+      { status: 500 }
+    );
+  }
+}
