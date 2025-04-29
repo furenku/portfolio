@@ -140,71 +140,86 @@ async function getImageDataFromUrl(url: string): Promise<ImageData> {
   }
 }
 
+
+import images from "../../../../data/test/images/get.json"
+
 export async function GET() {
   try {
-    const localPreviewBaseDir = path.join(process.cwd(), 'data/test/images/');
+    
+    return new Response(JSON.stringify(images), { status: 200 });
 
-    const rawImages: ApiImage[] = new Array(7).fill(true).map((_, i) => {
-      const seed = (Math.random() * 99999).toString();
-      return {
-        sizes: {
-          // xl: `https://picsum.photos/seed/${seed}/1920/1080`,
-          // lg: `https://picsum.photos/seed/${seed}/1024/578`,
-          // md: `https://picsum.photos/seed/${seed}/768/432`,
-          // sm: `https://picsum.photos/seed/${seed}/568/320`,
-          xs: `https://picsum.photos/seed/${seed}/480/270`
-        },
-        preview: `https://picsum.photos/seed/${seed}/32/18`,
-        alt: 'image ' + (i + 1).toString(),
-        caption: 'Caption text for image ' + (i + 1).toString()
-      }
-    });
-
-    const images: GalleryImage[] = [];
-
-    for (const rawImage of rawImages) {
-      const sizesWithInfo: any = {};
-      for (const [breakpoint, src] of Object.entries(rawImage.sizes)) {
-        if (src.startsWith('http://') || src.startsWith('https://')) {
-          const { width, height } = await getImageDataFromUrl(src);
-          sizesWithInfo[breakpoint] = {
-            src,
-            width: width, 
-            height: height
-          };
-        } else {
-          const localFilePath = path.join(localPreviewBaseDir, src);
-          const { width, height } = await getImageDataFromFile(localFilePath);
-          sizesWithInfo[breakpoint] = {
-            src,
-            width,
-            height
-          };
-        }
-      }
-
-      let preview = '';
-
-      if (rawImage.preview) {
-        if (rawImage.preview.startsWith('http://') || rawImage.preview.startsWith('https://')) {
-          preview = await getBase64Url(rawImage.preview);
-          
-        } else {
-          const localFilePath = path.join(localPreviewBaseDir, rawImage.preview);
-          preview = await getBase64File(localFilePath);          
-        }
-      }
-
-      images.push({
-        ...rawImage,
-        sizes: sizesWithInfo,
-        preview
-      });
-    }
-
-    return NextResponse.json(images);
   } catch (error) {
-    console.error('Error processing gallery images:', error);
-    return NextResponse.json({ error: 'Failed to process images' }, { status: 500 });
+    console.error('Error fetching images:', error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch images' }), { status: 500 });
   }
+
 }
+
+// export async function GET() {
+//   try {
+//     const localPreviewBaseDir = path.join(process.cwd(), 'data/test/images/');
+
+//     const rawImages: ApiImage[] = new Array(7).fill(true).map((_, i) => {
+//       const seed = Math.ceil((Math.random() * 99999)).toString();
+//       return {
+//         sizes: {
+//           xl: `https://picsum.photos/seed/${seed}/1920/1080`,
+//           lg: `https://picsum.photos/seed/${seed}/1024/578`,
+//           md: `https://picsum.photos/seed/${seed}/768/432`,
+//           sm: `https://picsum.photos/seed/${seed}/568/320`,
+//           xs: `https://picsum.photos/seed/${seed}/480/270`
+//         },
+//         preview: `https://picsum.photos/seed/${seed}/32/18`,
+//         alt: 'image ' + (i + 1).toString(),
+//         caption: 'Caption text for image ' + (i + 1).toString()
+//       }
+//     });
+
+//     const images: GalleryImage[] = [];
+
+//     for (const rawImage of rawImages) {
+//       const sizesWithInfo: any = {};
+//       for (const [breakpoint, src] of Object.entries(rawImage.sizes)) {
+//         if (src.startsWith('http://') || src.startsWith('https://')) {
+//           const { width, height } = await getImageDataFromUrl(src);
+//           sizesWithInfo[breakpoint] = {
+//             src,
+//             width: width, 
+//             height: height
+//           };
+//         } else {
+//           const localFilePath = path.join(localPreviewBaseDir, src);
+//           const { width, height } = await getImageDataFromFile(localFilePath);
+//           sizesWithInfo[breakpoint] = {
+//             src,
+//             width,
+//             height
+//           };
+//         }
+//       }
+
+//       let preview = '';
+
+//       if (rawImage.preview) {
+//         if (rawImage.preview.startsWith('http://') || rawImage.preview.startsWith('https://')) {
+//           preview = await getBase64Url(rawImage.preview);
+          
+//         } else {
+//           const localFilePath = path.join(localPreviewBaseDir, rawImage.preview);
+//           preview = await getBase64File(localFilePath);          
+//         }
+//       }
+
+//       images.push({
+//         ...rawImage,
+//         sizes: sizesWithInfo,
+//         preview
+//       });
+//     }
+
+//     return NextResponse.json(images);
+//   } catch (error) {
+//     console.error('Error processing gallery images:', error);
+//     return NextResponse.json({ error: 'Failed to process images' }, { status: 500 });
+//   }
+// }
