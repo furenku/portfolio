@@ -35,6 +35,9 @@ const uploadOriginal = async (file: File) : Promise<ActionResult> => {
 
     const uploadWorkerResponse = await fetch(uploadWorkerUrl, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.UPLOAD_WORKER_TOKEN}`,
+      },
       body: data,        
     });
 
@@ -75,6 +78,9 @@ const uploadResult = async ( name: string, result: Blob, size: keyof SizeRecord 
 
     const uploadWorkerResponse = await fetch(uploadWorkerUrl, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.UPLOAD_WORKER_TOKEN}`,
+      },
       body: data,        
     });
 
@@ -125,6 +131,9 @@ const createResized = async (name:string, url:string) : Promise<ActionResult & {
 
       const resizeWorkerResponse = await fetch( imageWorkerUrl, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESIZE_WORKER_TOKEN}`,
+        },
         body: data
       });
 
