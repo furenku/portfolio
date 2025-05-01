@@ -1,20 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
-export interface ApiImage {
+
+type ImageSize = { url: string; width: number; height: number };
+
+
+type Dimensions = {
+  width: number;
+  height: number;
+};
+
+export interface ApiImage extends Dimensions {
+  id?: number | string;
   src?: string;
   alt?: string;
   caption?: string;
   sizes: {
-    [key in Breakpoint]: string;
-  },
+    [key in Breakpoint]: ImageSize
+  };  
   preview?: string;
+  filename?: string;
+  created_at?: string;
+};
 
-}
 
-type SizeRecord = {
-  [ key in Breakpoint ]?: string
+
+type SizeRecords = {
+  [ key in Breakpoint ]?: ImageSize
 }
 
 
@@ -23,10 +37,10 @@ interface ActionResult {
   status: number;
 }
 
-import images from "../../../../data/test/images/get.json"
+// import images from "../../../../data/test/images/get.json"
 
 
-const uploadOriginal = async (file: File) : Promise<ActionResult> => {
+const uploadOriginal = async (file: File) : Promise<ActionResult & { data?: Dimensions }> => {
   try {
   
     const data = new FormData();
@@ -60,8 +74,15 @@ const uploadOriginal = async (file: File) : Promise<ActionResult> => {
       };
     }
 
+    const uploadWorkerData = await uploadWorkerResponse.json();
+    
+    console.log( 'Worker response:', uploadWorkerData);
+    
+
+
     return {
       ok: true,
+      data: uploadWorkerData,
       status: uploadWorkerResponse.status,
     };
 
@@ -74,7 +95,7 @@ const uploadOriginal = async (file: File) : Promise<ActionResult> => {
   }
 }
 
-const uploadResult = async ( name: string, result: Blob, size: keyof SizeRecord ) : Promise<ActionResult> => {          
+const uploadResult = async ( name: string, result: Blob, size: keyof SizeRecords ) : Promise<ActionResult & { data?: Dimensions }> => {          
   try {
 
 
@@ -110,9 +131,17 @@ const uploadResult = async ( name: string, result: Blob, size: keyof SizeRecord 
       };
     }
 
+    const uploadWorkerData = await uploadWorkerResponse.json();
 
+    console.log("uploadWorkerResponse.data", uploadWorkerData
+    );
+    
+
+    
+    
     return {
       ok: true,
+      data: uploadWorkerData,
       status: uploadWorkerResponse.status,
     };
     
@@ -129,11 +158,11 @@ const uploadResult = async ( name: string, result: Blob, size: keyof SizeRecord 
 }
 }
 
-const createResized = async (name:string, url:string) : Promise<ActionResult & { sizes?: SizeRecord }> => {
+const createResized = async (name:string, url:string) : Promise<ActionResult & { data?: Dimensions, sizes?: SizeRecords }> => {
   
   const storageUrl = process.env.CF_STORAGE_WORKER_URL;
 
-  const sizes : SizeRecord = {}
+  const sizes : SizeRecords = {}
   
   try {
 
@@ -142,8 +171,6 @@ const createResized = async (name:string, url:string) : Promise<ActionResult & {
     for (const size of sizesList) {
 
       const data = new FormData();
-
-      console.log("size", size);
       
       data.append('size', size);
       data.append('url', url);
@@ -187,10 +214,23 @@ const createResized = async (name:string, url:string) : Promise<ActionResult & {
       const didUpload = await uploadResult( name, result, size )
 
       if( ! didUpload.ok ) {
-        return didUpload
+        return didUpload as ActionResult
+      }
+      
+      
+      if( ! didUpload.data?.width || ! didUpload.data?.height ) {
+        console.error('Failed to get image dimensions');
+        return {
+          ok: false,
+          status: 500,
+        };
       }
 
-      sizes[size as keyof typeof sizes] = storageUrl + '/resized/' + size + '/' + name
+      sizes[size as keyof typeof sizes] = {
+        url: storageUrl + '/resized/' + size + '/' + name,
+        width: didUpload.data.width,
+        height: didUpload.data.height,
+      }
       
     }
     
@@ -218,16 +258,134 @@ const createResized = async (name:string, url:string) : Promise<ActionResult & {
 
 
 
+const supabaseUrl = process.env.MEDIASERVER_SUPABASE_URL;
+const supabaseAnonKey = process.env.MEDIASERVER_SUPABASE_ANON_KEY;
 
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Supabase environment variables (URL and Anon Key) are not set.");
+  throw new Error("Supabase environment variables are missing.");
+}
 
-export async function GET() {
+// Create a single Supabase client instance
+const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
+
+// --- Database Structure Verification ---
+// Use an immediately-invoked async function expression (IIAFE) to run the check
+// Store the promise to ensure handlers wait for it if needed, or handle errors directly.
+let isDbStructureValid = false; // Flag to track validity
+const dbCheckPromise = (async () => {
+
+  const tableName = 'images';
+
+  console.log(`Verifying database structure for table: ${tableName}...`);
+
   try {
-    
-    return new NextResponse(JSON.stringify(images), { status: 200 });
+    // 1. Check basic table existence and select permission with a minimal query
+    const { error: existError } = await supabase
+      .from(tableName)
+      .select('id') // Select a known essential column
+      .limit(0);
+
+    if (existError) {
+      // Check for specific "relation does not exist" error (Postgres code)
+      if (existError.code === '42P01') {
+        console.error(`FATAL: Table "${tableName}" does not exist. Please create it in Supabase.`);
+        console.error("Required columns: id, created_at, filename, original_url, sizes (jsonb), alt_text, caption");
+      } else {
+        console.error(`FATAL: Error querying table "${tableName}". Check permissions or connection.`, existError);
+      }
+      throw new Error(`Database table "${tableName}" verification failed.`); // Throw to stop initialization
+    }
+
+    // 2. Check for essential columns (add more as needed)
+    // This query will fail if any of these columns don't exist.
+    const { error: columnError } = await supabase
+      .from(tableName)
+      .select('id, filename, original_url, sizes, created_at, alt_text, caption')
+      .limit(0);
+
+    if (columnError) {
+        // Check for specific "column does not exist" error (Postgres code)
+       if (columnError.code === '42703') {
+           console.error(`FATAL: Table "${tableName}" exists but has an incorrect structure. Missing or mismatched essential columns.`);
+           console.error(`Details: ${columnError.message}`);
+           console.error("Ensure columns exist: id, filename, original_url, sizes (jsonb), created_at, alt_text, caption");
+       } else {
+           console.error(`FATAL: Error selecting essential columns from "${tableName}".`, columnError);
+       }
+      throw new Error(`Database table "${tableName}" structure verification failed.`); // Throw to stop initialization
+    }
+
+    console.log(`Database structure for table "${tableName}" verified successfully.`);
+    isDbStructureValid = true; // Set flag on success
+    return true;
 
   } catch (error) {
-    console.error('Error fetching images:', error);
-    return new NextResponse(JSON.stringify({ error: 'Failed to fetch images' }), { status: 500 });
+    console.error("Database verification process encountered an error:", error);
+    // Keep isDbStructureValid as false
+    // Depending on your framework/setup, you might want to explicitly prevent handlers
+    // from running, e.g., by not exporting them or having them check the flag.
+    // For now, the console errors indicate the critical failure.
+    isDbStructureValid = false;
+    return false;
+  }
+})(); // Execute the check immediately
+
+await dbCheckPromise;
+
+// --- API Handlers ---
+
+export async function GET() {
+  
+  await dbCheckPromise;
+  
+  if (!isDbStructureValid) {
+       console.error("GET /api/images: Aborting because database structure is invalid.");
+       return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
+  }
+
+  try {
+
+    // return new NextResponse(JSON.stringify(images), { status: 200 });
+
+    // Fetch images from Supabase 'images' table
+    const { data: imagesData, error } = await supabase
+      .from('images') // Replace 'images' with your actual table name
+      .select('*') // Select all columns
+      .order('created_at', { ascending: false }); // Optional: order by creation date
+
+    if (error) {
+      console.error('Supabase GET error:', error);
+      throw error; // Let the catch block handle it
+    }
+
+    const formattedImages: ApiImage[] = imagesData?.map(img => ({
+      id: img.id,
+      
+      src: img.original_url, 
+      alt: img.alt_text,     
+      caption: img.caption,      
+      sizes: img.sizes,        
+      preview: img.sizes?.xs,  
+      filename: img.filename,    
+      created_at: img.created_at,
+      width: img.width,
+      height: img.height
+    })) || []; 
+
+
+    // Return the fetched and formatted data
+    return new NextResponse(JSON.stringify(formattedImages), {
+       status: 200,
+       headers: { 'Content-Type': 'application/json' } // Set content type
+    });
+
+    
+
+  } catch (error) {
+    console.error('Error fetching images from Supabase:', error);
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    return new NextResponse(JSON.stringify({ error: 'Failed to fetch images', details: message }), { status: 500 });
   }
 
 }
@@ -236,6 +394,11 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   
+  if (!isDbStructureValid) {
+    console.error("POST /api/images: Aborting because database structure is invalid.");
+    return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
+  }
+
   const storageUrl = process.env.CF_STORAGE_WORKER_URL;
   
 
@@ -250,6 +413,10 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
+    // Optional: Get alt text and caption if sent from the client
+    const altText = formData.get('alt') as string | null;
+    const caption = formData.get('caption') as string | null;
+
 
     if (!file) {
       return NextResponse.json(
@@ -258,42 +425,87 @@ export async function POST(req: NextRequest) {
       );
     }
 
-
-
-
-  
+    // --- Upload Original ---
     const didUpload = await uploadOriginal( file )
 
     if( ! didUpload.ok ) {
-
       return NextResponse.json(
-        { error: 'Could not upload' },
+        { error: 'Could not upload original image' },
         { status: didUpload.status }
       );
-
-      
     }
+
+
+    if( ! didUpload.data?.width || ! didUpload.data?.height ) {
+      return NextResponse.json(
+        { error: 'Could not get image dimensions' },
+        { status: didUpload.status }
+      );
+    }
+
     const originalUrl = storageUrl + '/original/' + file.name;
-    
+
+    // --- Create Resized Versions ---
     const response = await createResized( file.name, originalUrl )
 
-    if( ! response.ok ) {
+    if( ! response.ok || !response.sizes ) { // Check response.sizes exists
       return NextResponse.json(
         { error: 'Could not create resized images' },
         { status: response.status }
       );
-    } 
+    }
 
-  
-    return NextResponse.json( {
-      original: originalUrl,
-      sizes: response.sizes
-    }, { status: 201 }); // 201 Created is often suitable for successful POST
-      
-      
+    
+
+
+    // --- Store metadata in Supabase ---
+    const { data: dbData, error: dbError } = await supabase
+      .from('images') // Use your actual table name
+      .insert([
+        {
+          filename: file.name,
+          original_url: originalUrl,
+          sizes: response.sizes, 
+          alt_text: altText,     
+          caption: caption,      
+          width: didUpload.data.width, 
+          height: didUpload.data.height, 
+        },
+      ])
+      .select() // Optionally select the inserted data to return it
+      .single(); // Expecting a single row insert
+
+
+    if (dbError) {
+      console.error('Supabase POST error:', dbError);
+      // Consider what to do if DB insert fails after successful uploads
+      // For now, return an error
+      return NextResponse.json(
+        { error: 'Failed to save image metadata to database', details: dbError.message },
+        { status: 500 }
+      );
+    }
+
+    // --- Respond ---
+    // Optionally format the response using the data returned from Supabase (dbData)
+    const newImageEntry: ApiImage = {
+        id: dbData.id,
+        src: dbData.original_url,
+        alt: dbData.alt_text,
+        caption: dbData.caption,
+        sizes: dbData.sizes,
+        preview: dbData.sizes?.xs,
+        filename: dbData.filename,
+        created_at: dbData.created_at,
+        width: dbData.width,
+        height: dbData.height,
+    };
+
+    return NextResponse.json( newImageEntry, { status: 201 });
 
 
   } catch (error) {
+     // ... (existing error handling) ...
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Error in POST /api/images:', message);
     // Distinguish between client errors (e.g., bad form data) and server errors
