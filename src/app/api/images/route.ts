@@ -76,9 +76,6 @@ const uploadOriginal = async (file: File) : Promise<ActionResult & { data?: Dime
 
     const uploadWorkerData = await uploadWorkerResponse.json();
     
-    console.log( 'Worker response:', uploadWorkerData);
-    
-
 
     return {
       ok: true,
@@ -133,10 +130,7 @@ const uploadResult = async ( name: string, result: Blob, size: keyof SizeRecords
 
     const uploadWorkerData = await uploadWorkerResponse.json();
 
-    console.log("uploadWorkerResponse.data", uploadWorkerData
-    );
     
-
     
     
     return {
@@ -277,8 +271,6 @@ const dbCheckPromise = (async () => {
 
   const tableName = 'images';
 
-  console.log(`Verifying database structure for table: ${tableName}...`);
-
   try {
     // 1. Check basic table existence and select permission with a minimal query
     const { error: existError } = await supabase
@@ -316,7 +308,7 @@ const dbCheckPromise = (async () => {
       throw new Error(`Database table "${tableName}" structure verification failed.`); // Throw to stop initialization
     }
 
-    console.log(`Database structure for table "${tableName}" verified successfully.`);
+    
     isDbStructureValid = true; // Set flag on success
     return true;
 
