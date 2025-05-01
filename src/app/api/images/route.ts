@@ -187,9 +187,9 @@ const createResized = async (name:string, url:string) : Promise<ActionResult & {
 
 
 
-const uploadWorkerUrl = process.env.CF_UPLOAD_WORKER_URL || "https://upload.rodrigofrenk.dev"
-const storageUrl = process.env.CF_STORAGE_WORKER_URL || "https://media.rodrigofrenk.dev"
-const imageWorkerUrl = process.env.CF_IMAGE_WORKER_URL || "https://img.rodrigofrenk.dev";
+const uploadWorkerUrl = process.env.CF_UPLOAD_WORKER_URL;
+const storageUrl = process.env.CF_STORAGE_WORKER_URL;
+const imageWorkerUrl = process.env.CF_IMAGE_WORKER_URL;
 
 
 
