@@ -32,6 +32,15 @@ const uploadOriginal = async (file: File) : Promise<ActionResult> => {
     const data = new FormData();
     data.append('file', file, file.name);
     
+    const uploadWorkerUrl = process.env.CF_UPLOAD_WORKER_URL;
+
+    if (!uploadWorkerUrl) {
+      console.error('CF_UPLOAD_WORKER_URL is not defined');
+      return {
+        ok: false,
+        status: 500,
+      };
+    }
 
     const uploadWorkerResponse = await fetch(uploadWorkerUrl, {
       method: 'POST',
@@ -74,7 +83,15 @@ const uploadResult = async ( name: string, result: Blob, size: keyof SizeRecord 
     data.append('size', size );
     
 
+    const uploadWorkerUrl = process.env.CF_UPLOAD_WORKER_URL;
 
+    if (!uploadWorkerUrl) {
+      console.error('CF_UPLOAD_WORKER_URL is not defined');
+      return {
+        ok: false,
+        status: 500,
+      };
+    }
 
     const uploadWorkerResponse = await fetch(uploadWorkerUrl, {
       method: 'POST',
@@ -114,6 +131,8 @@ const uploadResult = async ( name: string, result: Blob, size: keyof SizeRecord 
 
 const createResized = async (name:string, url:string) : Promise<ActionResult & { sizes?: SizeRecord }> => {
   
+  const storageUrl = process.env.CF_STORAGE_WORKER_URL;
+
   const sizes : SizeRecord = {}
   
   try {
@@ -128,6 +147,16 @@ const createResized = async (name:string, url:string) : Promise<ActionResult & {
       
       data.append('size', size);
       data.append('url', url);
+
+      const imageWorkerUrl = process.env.CF_IMAGE_WORKER_URL;
+
+      if (!imageWorkerUrl) {
+        console.error('CF_UPLOAD_WORKER_URL is not defined');
+        return {
+          ok: false,
+          status: 500,
+        };
+      }
 
       const resizeWorkerResponse = await fetch( imageWorkerUrl, {
         method: 'POST',
@@ -187,9 +216,6 @@ const createResized = async (name:string, url:string) : Promise<ActionResult & {
 
 
 
-const uploadWorkerUrl = process.env.CF_UPLOAD_WORKER_URL;
-const storageUrl = process.env.CF_STORAGE_WORKER_URL;
-const imageWorkerUrl = process.env.CF_IMAGE_WORKER_URL;
 
 
 
@@ -210,21 +236,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   
+  const storageUrl = process.env.CF_STORAGE_WORKER_URL;
   
-  if (!storageUrl) {
-    console.error('CF_STORAGE_WORKER_URL environment variable is not set.');
-    return NextResponse.json(
-      { error: 'Server configuration error: Worker URL missing' },
-      { status: 500 }
-    );
-  }
-  if (!imageWorkerUrl) {
-    console.error('CF_IMAGE_WORKER_URL  environment variable is not set.');
-    return NextResponse.json(
-      { error: 'Server configuration error: Worker URL missing' },
-      { status: 500 }
-    );
-  }
 
   try {
     const contentType = req.headers.get('content-type') || '';
@@ -245,7 +258,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const originalUrl = storageUrl + '/original/' + file.name;
 
 
 
@@ -261,6 +273,7 @@ export async function POST(req: NextRequest) {
 
       
     }
+    const originalUrl = storageUrl + '/original/' + file.name;
     
     const response = await createResized( file.name, originalUrl )
 
@@ -269,7 +282,6 @@ export async function POST(req: NextRequest) {
         { error: 'Could not create resized images' },
         { status: response.status }
       );
-
     } 
 
   
