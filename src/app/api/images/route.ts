@@ -13,6 +13,11 @@ export interface ApiImage {
 
 }
 
+type SizeRecord = {
+  [ key in Breakpoint ]?: string
+}
+
+
 
 import images from "../../../../data/test/images/get.json"
 
@@ -74,98 +79,129 @@ export async function POST(req: NextRequest) {
 
     const originalUrl = storageUrl + '/original/' + file.name;
 
-    let result
+    let result: Blob | null = null;
     
-    const breakpoints = {
-			xs: 320,
-			sm: 640,
-			md: 768,
-			lg: 1024,
-			xl: 1280,
-			xxl: 1536,
-    };
-
-
-    type SizeRecord = {
-      [ key in Breakpoint ]?: string
-    }
 
 
     const sizes : SizeRecord = {}
 
 
     // Prepare data to forward to the Cloudflare Worker
-    try {
+    const uploadOriginal = async () => {
+      try {
       
-      const data = new FormData();
-      data.append('file', file, file.name);
-      
-
-      const uploadWorkerResponse = await fetch(uploadWorkerUrl, {
-        method: 'POST',
-        body: data,        
-      });
-
-      // Check if the worker responded successfully
-      if (!uploadWorkerResponse.ok) {
-        const errorText = await uploadWorkerResponse.text();
-        console.error(`Worker error: ${uploadWorkerResponse.status} ${uploadWorkerResponse.statusText}`, errorText);
+        const data = new FormData();
+        data.append('file', file, file.name);
+        
+  
+        const uploadWorkerResponse = await fetch(uploadWorkerUrl, {
+          method: 'POST',
+          body: data,        
+        });
+  
+        // Check if the worker responded successfully
+        if (!uploadWorkerResponse.ok) {
+          const errorText = await uploadWorkerResponse.text();
+          console.error(`Worker error: ${uploadWorkerResponse.status} ${uploadWorkerResponse.statusText}`, errorText);
+          return NextResponse.json(
+            {
+              error: 'Failed to upload image',
+              workerStatus: uploadWorkerResponse.status,
+              uploadWorkerResponse: "...", // Include worker response for debugging
+            },
+            { status: uploadWorkerResponse.status } // Forward the worker's status code
+          );
+        }
+  
+      } catch (error) {
+        console.error('Error in POST /api/images:', error);
         return NextResponse.json(
-          {
-            error: 'Failed to upload image',
-            workerStatus: uploadWorkerResponse.status,
-            uploadWorkerResponse: "...", // Include worker response for debugging
-          },
-          { status: uploadWorkerResponse.status } // Forward the worker's status code
+          { error: 'Internal server error' },
+          { status: 500 }
         );
       }
+    }
 
-    } catch (error) {
-      console.error('Error in POST /api/images:', error);
+    const uploadResult = async ( result: Blob, size: keyof typeof sizes ) => {          
+      try {
+
+
+        const data = new FormData();
+        data.append('file', result, file.name);
+        data.append('size', size );
+        
+  
+
+
+        const uploadWorkerResponse = await fetch(uploadWorkerUrl, {
+          method: 'POST',
+          body: data,        
+        });
+
+        if (!uploadWorkerResponse.ok) {
+          const errorText = await uploadWorkerResponse.text();
+          console.error(`Worker error: ${uploadWorkerResponse.status} ${uploadWorkerResponse.statusText}`, errorText);
+          return NextResponse.json(
+            {
+              error: 'Failed to upload image',
+              workerStatus: uploadWorkerResponse.status,
+              uploadWorkerResponse: "...",
+            },
+            { status: uploadWorkerResponse.status }
+          );
+        }
+      } catch (error) {
+      console.error('Error in reupload:', error);
       return NextResponse.json(
         { error: 'Internal server error' },
         { status: 500 }
       );
     }
-
+  }
     
+  const createResized = async () => {
     try {
 
+        const sizesList: (keyof typeof sizes)[]  = ['xs', 'sm', 'md', 'lg', 'xl'];
+        
+        for (const size of sizesList) {
+          const data = new FormData();
 
-      const data = new FormData();
-      data.append('url', originalUrl);
-      data.append('size', 'xs');
+          console.log("size", size);
+          
+          data.append('size', size);
+          data.append('url', originalUrl);
+          console.log("url", originalUrl);
 
-      const resizedResponse = await fetch( imageWorkerUrl, {
-        method: 'POST',
-        body: data
-      });
+          const resizeWorkerResponse = await fetch( imageWorkerUrl, {
+            method: 'POST',
+            body: data
+          });
 
-      console.log(resizedResponse);
-      
+        
+        if( ! resizeWorkerResponse.ok ) {
+          const errorText = await resizeWorkerResponse.text();
+          console.error(`Worker error: ${resizeWorkerResponse.status} ${resizeWorkerResponse.statusText}`, errorText);
 
-      const uploadWorkerResponse = await fetch(uploadWorkerUrl, {
-        method: 'POST',
-        body: data,        
-      });
+          return NextResponse.json(
+            {
+              error: 'Failed to resize image',
+              workerStatus: resizeWorkerResponse.status,
+              resizeWorkerResponse: errorText, // Include worker response for debugging
+            },
+            { status: resizeWorkerResponse.status } // Forward the worker's status code
+          );
+        }
 
-      if( ! resizedResponse.ok ) {
-        const errorText = await uploadWorkerResponse.text();
-        console.error(`Worker error: ${uploadWorkerResponse.status} ${uploadWorkerResponse.statusText}`, errorText);
+        result = await resizeWorkerResponse.blob()
+        
 
-        return NextResponse.json(
-          {
-            error: 'Failed to resize image',
-            workerStatus: uploadWorkerResponse.status,
-            uploadWorkerResponse: errorText, // Include worker response for debugging
-          },
-          { status: uploadWorkerResponse.status } // Forward the worker's status code
-        );
+        await uploadResult( result, size )
+
+        sizes[size as keyof typeof sizes] = storageUrl + '/resized/' + size + '/' + file.name
+
       }
-
-      result = await resizedResponse.blob()
-
-
+      
     } catch (error) {
       console.error('Error in reupload:', error);
       return NextResponse.json(
@@ -173,47 +209,18 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+  }
 
-    try {
 
-      const data = new FormData();
-
-      data.append('file', result, file.name);
-      
-      data.append('size', 'xs');
     
-      const uploadWorkerResponse = await fetch(uploadWorkerUrl, {
-        method: 'POST',
-        body: data,        
-      });
+    
 
-      // Check if the worker responded successfully
-      if (!uploadWorkerResponse.ok) {
-        const errorText = await uploadWorkerResponse.text();
-        console.error(`Worker error: ${uploadWorkerResponse.status} ${uploadWorkerResponse.statusText}`, errorText);
-        return NextResponse.json(
-          {
-            error: 'Failed to upload image',
-            workerStatus: uploadWorkerResponse.status,
-            uploadWorkerResponse: "...", // Include worker response for debugging
-          },
-          { status: uploadWorkerResponse.status } // Forward the worker's status code
-        );
-      }
+  
+  
+    await uploadOriginal()
+    await createResized()
 
-      sizes['xs'] = storageUrl + '/resized/xs/' + file.name;
-
-      
-
-
-
-    } catch (error) {
-      console.error('Error in reupload:', error);
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
-    }
+    
   
     return NextResponse.json( {
       original: originalUrl,
