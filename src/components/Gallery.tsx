@@ -78,8 +78,18 @@ const pickImageSize = (img: GalleryImage, bp: Breakpoint): ImageSize | undefined
 };
 
 
-const AnimatedBlurImage = ({ src, alt, blurDataURL, objectFit='cover'  } : { src: string, alt: string, blurDataURL: string, objectFit?: CSSProperties['objectFit']  }) => {
+const AnimatedBlurImage = ({ src, alt, width, height, blurDataURL, objectFit='cover'  } : { src: string, alt: string, width?: number, height?: number,blurDataURL: string, objectFit?: CSSProperties['objectFit']  }) => {
   const [isLoaded, setIsLoaded] = useState(false)
+
+  const dimensions: {
+    [key: string]: number | undefined
+  } = {}
+
+  if( objectFit === 'contain' ) {
+    dimensions.width = width
+    dimensions.height = height
+  }
+
 
   return (
     <div className="overflow-hidden rounded-2xl w-full max-w-md bg-gray-200">
@@ -101,6 +111,7 @@ const AnimatedBlurImage = ({ src, alt, blurDataURL, objectFit='cover'  } : { src
             style={{
               objectFit
             }}
+            {...dimensions}
           />
 
 
@@ -119,10 +130,6 @@ const Gallery: React.FC<GalleryProps> = ({
   images,
   className = '',
 }) => {
-
-
-  console.log("images", images);
-
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -238,6 +245,8 @@ const Gallery: React.FC<GalleryProps> = ({
                     src={pickImageSize(main, mainBreakpoint)?.src || ''}
                     alt={main.alt ?? 'Main image'}
                     blurDataURL={main.preview || "" }
+                    width={ main.width }
+                    height={ main.height }
                   /></ImageContainer>
                 ) : (
                   <div className="w-full h-full bg-gray-200 animate-pulse"></div>
@@ -263,7 +272,9 @@ const Gallery: React.FC<GalleryProps> = ({
                       pickImageSize(img, 'xs')?.src || ""
                     }
                     alt={img.alt ?? `Thumbnail ${i + 1}`}
-                    blurDataURL={ img.preview || "" }  
+                    blurDataURL={ img.preview || "" }
+                    width={ img.width }
+                    height={ img.height }  
                   />
                 </ImageContainer>
               </div>
@@ -285,6 +296,8 @@ const Gallery: React.FC<GalleryProps> = ({
               alt={images[currentIndex].alt ?? 'Image'}
               blurDataURL={ images[currentIndex].preview || "" }
               objectFit='contain'
+              width={ images[currentIndex].width }
+              height={ images[currentIndex].height }
             />
           </div>
 
