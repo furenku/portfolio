@@ -150,6 +150,12 @@
 
 
     "sections": {
+        "services": {
+            "images": {
+                "title": "Images",
+                "description": "Exercitation velit enim Lorem veniam commodo dolore laborum consequat sit non id nulla veniam veniam."
+            }
+        },
         "ui": {
             "title": "UI Work",
             "description": "Development of intuitive and attractive user interfaces for web and mobile applications.",
