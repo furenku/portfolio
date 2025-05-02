@@ -75,31 +75,29 @@ const AnimatedBlurImage = ({ src, alt, width, height, blurDataURL, objectFit='co
 
 
   return (
-    <div className="overflow-hidden rounded-2xl w-full max-w-md bg-gray-200">
-      <motion.div
-        initial={{ opacity: 0.6 }}
-        animate={{ opacity: isLoaded ? 1 : 0.6 }}
-        transition={{ duration: 0.4 }}        
-      >
+    
+    <motion.div
+      initial={{ opacity: 0.6 }}
+      animate={{ opacity: isLoaded ? 1 : 0.6 }}
+      transition={{ duration: 0.4 }}        
+    >
 
-          <Image
-            src={src}
-            alt={alt}
-            fill
-            loading="lazy"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            placeholder={ blurDataURL ? "blur" : "empty" }
-            blurDataURL={blurDataURL}
-            onLoadingComplete={() => setIsLoaded(true)}
-            style={{
-              objectFit
-            }}
-            {...dimensions}
-          />
+        <Image
+          src={src}
+          alt={alt}            
+          loading="lazy"
+          placeholder={ blurDataURL ? "blur" : "empty" }
+          blurDataURL={blurDataURL}
+          onLoadingComplete={() => setIsLoaded(true)}
+          style={{
+            objectFit
+          }}
+          {...dimensions}
+        />
 
 
-      </motion.div>
-    </div>
+    </motion.div>
+
   )
 }
 
@@ -278,7 +276,7 @@ const Gallery: React.FC<GalleryProps> = ({
           <button aria-label="Close lightbox" className="absolute top-4 right-4 text-white text-2xl z-10" onClick={closeLightbox}>✕</button>
           <button aria-label="Previous image" className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={prevImage}>❮</button>
           <button aria-label="Next image" className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={nextImage}>❯</button>
-          <div className="relative w-[calc(100%-8rem)] h-[calc(100%-8rem)]">
+          <div className="relative flex justify-center items-center w-[calc(100%-8rem)] h-[calc(100%-8rem)]">
             <AnimatedBlurImage
               src={pickImageSize(images[currentIndex], breakpoint)?.src || "" }
               alt={images[currentIndex].alt ?? 'Image'}
