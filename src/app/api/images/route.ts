@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+type Breakpoint = 'preview' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 
 type ImageSize = { url: string; width: number; height: number };
@@ -152,7 +152,7 @@ const uploadResult = async ( name: string, result: Blob, size: keyof SizeRecords
 }
 }
 
-const createResized = async (name:string, url:string) : Promise<ActionResult & { data?: Dimensions, sizes?: SizeRecords }> => {
+const createResized = async (name:string, url:string, size?: Breakpoint) : Promise<ActionResult & { data?: ImageSize, sizes?: SizeRecords }> => {
   
   const storageUrl = process.env.CF_STORAGE_WORKER_URL;
 
@@ -160,7 +160,7 @@ const createResized = async (name:string, url:string) : Promise<ActionResult & {
   
   try {
 
-    const sizesList: (keyof typeof sizes)[]  = ['xs', 'sm', 'md', 'lg', 'xl'];
+    const sizesList: (keyof typeof sizes)[]  = size ? [size] : ['xs', 'sm', 'md', 'lg', 'xl'];
     
     for (const size of sizesList) {
 
@@ -228,11 +228,20 @@ const createResized = async (name:string, url:string) : Promise<ActionResult & {
       
     }
     
-    return {
+    const result: (
+      ActionResult & { data?: ImageSize, sizes?: SizeRecords }
+    ) = {
       ok: true,
-      sizes,
       status: 200
     }
+
+    if( ! size ) {
+      result.sizes = sizes      
+    } else  {
+      result.data = sizes[size]
+    }
+
+    return result
     
   } catch (error) {
     
@@ -246,6 +255,9 @@ const createResized = async (name:string, url:string) : Promise<ActionResult & {
   }
 
 }
+
+
+
 
 
 
@@ -358,7 +370,7 @@ export async function GET() {
       alt: img.alt_text,     
       caption: img.caption,      
       sizes: img.sizes,        
-      preview: img.sizes?.xs,  
+      preview: img.preview,  
       filename: img.filename,    
       created_at: img.created_at,
       width: img.width,
@@ -447,7 +459,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
+
+
+
+    // --- Create Resized Versions ---
+    const previewResponse = await createResized( file.name, originalUrl, 'preview' )
+
+    if( ! previewResponse.ok || !response.sizes ) { // Check response.sizes exists
+      return NextResponse.json(
+        { error: 'Could not create preview' },
+        { status: previewResponse.status }
+      );
+    }
+
+    if( ! previewResponse.data ) {
+      return NextResponse.json(
+        { error: 'Could not get preview url' },
+        { status: previewResponse.status }
+      );
+    }
+
+    const previewData : ImageSize = await previewResponse.data
+
+
     
+    const imageResponse = await fetch(previewData.url);
+    const arrayBuffer = await imageResponse.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString('base64');
+    const previewContentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+    const preview: string = `data:${previewContentType};base64,${base64}`;
+
 
 
     // --- Store metadata in Supabase ---
@@ -460,6 +502,7 @@ export async function POST(req: NextRequest) {
           sizes: response.sizes, 
           alt_text: altText,     
           caption: caption,      
+          preview,      
           width: didUpload.data.width, 
           height: didUpload.data.height, 
         },
@@ -486,7 +529,7 @@ export async function POST(req: NextRequest) {
         alt: dbData.alt_text,
         caption: dbData.caption,
         sizes: dbData.sizes,
-        preview: dbData.sizes?.xs,
+        preview: dbData.preview,
         filename: dbData.filename,
         created_at: dbData.created_at,
         width: dbData.width,
