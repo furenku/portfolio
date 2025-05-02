@@ -1,11 +1,9 @@
 "use client";
 
-import Image from 'next/image';
 import React, { useState, useEffect, useCallback } from 'react';
-import type { CSSProperties } from 'react'; // Import CSSProperties
 import useMeasure from "react-use-measure";
-import { motion } from 'framer-motion'
 import { ApiImage, Breakpoint, ImageSize } from '@/types/media-server';
+import { ImageContainer } from './ImageContainer';
 
 
 
@@ -58,54 +56,6 @@ const pickImageSize = (img:
 
 };
 
-
-const AnimatedBlurImage = ({ src, alt, width, height, blurDataURL, objectFit='cover'  } : { src: string, alt: string, width?: number, height?: number,blurDataURL: string, objectFit?: CSSProperties['objectFit']  }) => {
-  const [isLoaded, setIsLoaded] = useState(false)
-
-  const dimensions: {
-    [key: string]: number | boolean | undefined
-  } = {}
-
-  if( objectFit === 'contain' ) {
-    dimensions.width = width
-    dimensions.height = height
-  } else {
-    dimensions.fill = true
-  }
-
-
-  return (
-    
-    <motion.div
-      initial={{ opacity: 0.6 }}
-      animate={{ opacity: isLoaded ? 1 : 0.6 }}
-      transition={{ duration: 0.4 }}        
-    >
-
-        <Image
-          src={src}
-          alt={alt}            
-          loading="lazy"
-          placeholder={ blurDataURL ? "blur" : "empty" }
-          blurDataURL={blurDataURL}
-          onLoadingComplete={() => setIsLoaded(true)}
-          style={{
-            objectFit
-          }}
-          {...dimensions}
-        />
-
-
-    </motion.div>
-
-  )
-}
-
-const ImageContainer: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ children, className = '' }) => (
-  <div className={`relative w-full h-full overflow-hidden ${className}`}>
-    {children}
-  </div>
-);
 
 const Gallery: React.FC<GalleryProps> = ({
   images,
@@ -227,13 +177,13 @@ const Gallery: React.FC<GalleryProps> = ({
             >
               {
                 mainBreakpoint ? (
-                  <ImageContainer><AnimatedBlurImage
+                  <ImageContainer
                     src={pickImageSize(main, mainBreakpoint)?.src || ''}
                     alt={main.alt ?? 'Main image'}
                     blurDataURL={main.preview || "" }
                     width={ main.width }
                     height={ main.height }
-                  /></ImageContainer>
+                  />
                 ) : (
                   <div className="w-full h-full bg-gray-200 animate-pulse"></div>
               )}
@@ -252,8 +202,7 @@ const Gallery: React.FC<GalleryProps> = ({
               // Calculate the correct original index for the lightbox
               // The index `i` is relative to `visibleThumbs`, but we need the index within the full `images` array
               <div className="flex-1 h-full cursor-pointer" key={i} onClick={() => openLightbox(i + 1)}>
-                <ImageContainer>
-                  <AnimatedBlurImage
+                <ImageContainer
                     src={
                       pickImageSize(img, 'xs')?.src || ""
                     }
@@ -262,7 +211,7 @@ const Gallery: React.FC<GalleryProps> = ({
                     width={ img.width }
                     height={ img.height }  
                   />
-                </ImageContainer>
+                
               </div>
             ))}
           </div>
@@ -277,7 +226,7 @@ const Gallery: React.FC<GalleryProps> = ({
           <button aria-label="Previous image" className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={prevImage}>❮</button>
           <button aria-label="Next image" className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-3xl z-10" onClick={nextImage}>❯</button>
           <div className="relative flex justify-center items-center w-[calc(100%-8rem)] h-[calc(100%-8rem)]">
-            <AnimatedBlurImage
+            <ImageContainer
               src={pickImageSize(images[currentIndex], breakpoint)?.src || "" }
               alt={images[currentIndex].alt ?? 'Image'}
               blurDataURL={ images[currentIndex].preview || "" }

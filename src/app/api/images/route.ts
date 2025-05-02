@@ -346,7 +346,8 @@ export async function GET() {
       filename: img.filename,    
       created_at: img.created_at,
       width: img.width,
-      height: img.height
+      height: img.height,
+      path: img.path,
     })) || []; 
 
 
@@ -522,6 +523,56 @@ export async function POST(req: NextRequest) {
            { status: 400 }
        );
     }
+    return NextResponse.json(
+      { error: 'Internal server error', details: message },
+      { status: 500 }
+    );
+  }
+}
+
+
+
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const { imageIds, targetPath } = await req.json();
+    
+    if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one image ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Update the path for all specified images
+    const { data, error } = await supabase
+      .from('images')
+      .update({ 
+        path: targetPath === '' ? null : targetPath 
+      })
+      .in('id', imageIds);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return NextResponse.json(
+        { error: 'Failed to move images', details: error.message },
+        { status: 500 }
+      );
+    }
+
+
+    console.log("data", data);
+    
+
+    return NextResponse.json({ 
+      success: true, 
+      message: `Moved ${imageIds.length} image(s) to ${targetPath || 'root folder'}` 
+    }, { status: 200 });
+    
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error('Error moving images:', message);
+    
     return NextResponse.json(
       { error: 'Internal server error', details: message },
       { status: 500 }

@@ -2,6 +2,7 @@ import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 import StandardLayout from '@/components/layout/StandardLayout';
 import { Button } from '@/components/ui/button';
+import Login from '@/components/auth/Login';
 type Props = {
   params: {locale: string};
 };
@@ -32,7 +33,11 @@ export default function IndexPage({params: {locale}}: Props) {
 
 
         <div className="demo flex w-full min-h-[66vh] md:h-auto md:min-w-md md:max-w-lg bg-gray-300 rounded-xl">
-            
+            <div className="content w-full flex p-2 justify-center items-center ">
+              <div className="w-80 h-80 flex p-8 justify-center items-center ">
+                <Login/>
+              </div>
+            </div>
         </div>
 
 
