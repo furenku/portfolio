@@ -8,7 +8,8 @@ const nextConfig: NextConfig = {
   images: {
     domains: [
       'picsum.photos',
-      'localhost'
+      'localhost',
+      'media.rodrigofrenk.dev',
     ],
     
   },

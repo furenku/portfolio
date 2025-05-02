@@ -1,29 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { ApiImage, Breakpoint, Dimensions, ImageSize } from '@/types/media-server';
 
-type Breakpoint = 'preview' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-
-
-type ImageSize = { url: string; width: number; height: number };
-
-
-type Dimensions = {
-  width: number;
-  height: number;
-};
-
-export interface ApiImage extends Dimensions {
-  id?: number | string;
-  src?: string;
-  alt?: string;
-  caption?: string;
-  sizes: {
-    [key in Breakpoint]: ImageSize
-  };  
-  preview?: string;
-  filename?: string;
-  created_at?: string;
-};
 
 
 
@@ -152,7 +130,7 @@ const uploadResult = async ( name: string, result: Blob, size: keyof SizeRecords
 }
 }
 
-const createResized = async (name:string, url:string, size?: Breakpoint) : Promise<ActionResult & { data?: ImageSize, sizes?: SizeRecords }> => {
+const createResized = async (name:string, src:string, size?: Breakpoint) : Promise<ActionResult & { data?: ImageSize, sizes?: SizeRecords }> => {
   
   const storageUrl = process.env.CF_STORAGE_WORKER_URL;
 
@@ -167,7 +145,7 @@ const createResized = async (name:string, url:string, size?: Breakpoint) : Promi
       const data = new FormData();
       
       data.append('size', size);
-      data.append('url', url);
+      data.append('url', src);
 
       const imageWorkerUrl = process.env.CF_IMAGE_WORKER_URL;
 
@@ -221,7 +199,7 @@ const createResized = async (name:string, url:string, size?: Breakpoint) : Promi
       }
 
       sizes[size as keyof typeof sizes] = {
-        url: storageUrl + '/resized/' + size + '/' + name,
+        src: storageUrl + '/resized/' + size + '/' + name,
         width: didUpload.data.width,
         height: didUpload.data.height,
       }
@@ -258,12 +236,6 @@ const createResized = async (name:string, url:string, size?: Breakpoint) : Promi
 
 
 
-
-
-
-
-
-
 const supabaseUrl = process.env.MEDIASERVER_SUPABASE_URL;
 const supabaseAnonKey = process.env.MEDIASERVER_SUPABASE_ANON_KEY;
 
@@ -294,7 +266,7 @@ const dbCheckPromise = (async () => {
       // Check for specific "relation does not exist" error (Postgres code)
       if (existError.code === '42P01') {
         console.error(`FATAL: Table "${tableName}" does not exist. Please create it in Supabase.`);
-        console.error("Required columns: id, created_at, filename, original_url, sizes (jsonb), alt_text, caption");
+        console.error("Required columns: id, created_at, filename, src, sizes (jsonb), alt_text, caption");
       } else {
         console.error(`FATAL: Error querying table "${tableName}". Check permissions or connection.`, existError);
       }
@@ -305,7 +277,7 @@ const dbCheckPromise = (async () => {
     // This query will fail if any of these columns don't exist.
     const { error: columnError } = await supabase
       .from(tableName)
-      .select('id, filename, original_url, sizes, created_at, alt_text, caption')
+      .select('id, filename, src, sizes, created_at, alt_text, caption')
       .limit(0);
 
     if (columnError) {
@@ -313,7 +285,7 @@ const dbCheckPromise = (async () => {
        if (columnError.code === '42703') {
            console.error(`FATAL: Table "${tableName}" exists but has an incorrect structure. Missing or mismatched essential columns.`);
            console.error(`Details: ${columnError.message}`);
-           console.error("Ensure columns exist: id, filename, original_url, sizes (jsonb), created_at, alt_text, caption");
+           console.error("Ensure columns exist: id, filename, src, sizes (jsonb), created_at, alt_text, caption");
        } else {
            console.error(`FATAL: Error selecting essential columns from "${tableName}".`, columnError);
        }
@@ -366,7 +338,7 @@ export async function GET() {
     const formattedImages: ApiImage[] = imagesData?.map(img => ({
       id: img.id,
       
-      src: img.original_url, 
+      src: img.src, 
       alt: img.alt_text,     
       caption: img.caption,      
       sizes: img.sizes,        
@@ -483,7 +455,7 @@ export async function POST(req: NextRequest) {
 
 
     
-    const imageResponse = await fetch(previewData.url);
+    const imageResponse = await fetch(previewData.src);
     const arrayBuffer = await imageResponse.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64 = buffer.toString('base64');
@@ -498,7 +470,7 @@ export async function POST(req: NextRequest) {
       .insert([
         {
           filename: file.name,
-          original_url: originalUrl,
+          src: originalUrl,
           sizes: response.sizes, 
           alt_text: altText,     
           caption: caption,      
@@ -525,7 +497,7 @@ export async function POST(req: NextRequest) {
     // Optionally format the response using the data returned from Supabase (dbData)
     const newImageEntry: ApiImage = {
         id: dbData.id,
-        src: dbData.original_url,
+        src: dbData.src,
         alt: dbData.alt_text,
         caption: dbData.caption,
         sizes: dbData.sizes,

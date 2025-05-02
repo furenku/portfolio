@@ -5,34 +5,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { CSSProperties } from 'react'; // Import CSSProperties
 import useMeasure from "react-use-measure";
 import { motion } from 'framer-motion'
+import { ApiImage, Breakpoint, ImageSize } from '@/types/media-server';
 
 
 
-type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-
-export type Dimensions = {
-  width?: number;
-  height?: number;
-}
-
-export type ImageSize = {
-  src: string
-} & Dimensions;
-
-export type GalleryImage = {
-  alt?: string;
-  caption?: string;
-  preview?: string;
-} & (
-  | { src: string; sizes?: { [key in Breakpoint]: ImageSize } }
-  | { sizes: {
-    [key in Breakpoint]: ImageSize
-  };
-  src?: string }
-) & Dimensions;
 
 interface GalleryProps {
-  images: GalleryImage[];
+  images: ApiImage[];
   className?: string;
 }
 
@@ -69,10 +48,12 @@ const getBreakpoint = (width: number): Breakpoint => {
 
 };
 
-const pickImageSize = (img: GalleryImage, bp: Breakpoint): ImageSize | undefined => {
-  
+const pickImageSize = (img: 
+  ApiImage, bp: Breakpoint): ImageSize | undefined => {
+      
+
   if( ! img.sizes || ! img.sizes[bp] ) return
-  
+      
   return img.sizes[bp];
 
 };
@@ -82,12 +63,14 @@ const AnimatedBlurImage = ({ src, alt, width, height, blurDataURL, objectFit='co
   const [isLoaded, setIsLoaded] = useState(false)
 
   const dimensions: {
-    [key: string]: number | undefined
+    [key: string]: number | boolean | undefined
   } = {}
 
   if( objectFit === 'contain' ) {
     dimensions.width = width
     dimensions.height = height
+  } else {
+    dimensions.fill = true
   }
 
 
@@ -133,7 +116,8 @@ const Gallery: React.FC<GalleryProps> = ({
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [actualImages, setActualImages] = useState<GalleryImage[]>([]);
+  const [actualImages, setActualImages] = useState<
+  ApiImage[]>([]);
   const [visibleThumbCount, setVisibleThumbCount] = useState(2); // Default count
 
   const [mainImageRef, bounds] = useMeasure();
@@ -203,7 +187,7 @@ const Gallery: React.FC<GalleryProps> = ({
 
   useEffect(() => {
     // Store all potential thumbnails (excluding the main image)
-    if (images.length > 1) {
+    if (images.length > 0 ) {
       setActualImages(images);
     } else {
       setActualImages([]);
@@ -221,7 +205,11 @@ const Gallery: React.FC<GalleryProps> = ({
 
 
 
-  if (!images || images.length === 0) return null;
+  if (!images || images.length === 0) return (
+    <div className="flex items-center justify-center h-full">
+      <p className="text-gray-500">No images available</p>
+    </div>
+  );
 
 
   
