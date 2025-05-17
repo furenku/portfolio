@@ -112,5 +112,56 @@ export async function POST(req: NextRequest) {
 
   return new NextResponse(JSON.stringify({ error: 'Implementation pending. This endpoint is not yet available.' }), { status: 501 });
 
+  /*
+
+export async function POST(req: NextRequest) {
+  await dbCheckPromise;
+
+  if (!isDbStructureValid) {
+    console.error("POST /api/images/folders: Aborting because database structure is invalid.");
+    return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
+  }
+
+  try {
+    const data = await req.json();
+    const folderPath: string = data?.path?.trim();
+    if (!folderPath) {
+      return new NextResponse(JSON.stringify({ error: "Missing or empty 'path' field" }), { status: 400 });
+    }
+
+    // Extract folder name from path (foo/bar → bar)
+    const segments = folderPath.split("/").filter(Boolean);
+    const folderName = segments[segments.length - 1];
+    if (!folderName) {
+      return new NextResponse(JSON.stringify({ error: "Invalid folder path" }), { status: 400 });
+    }
+
+    // Insert into the image_folders table (make sure it exists with 'name' and 'path')
+    const { error: insertError, data: insertData } = await supabase
+      .from('image_folders')
+      .insert([{ name: folderName, path: folderPath }])
+      .select()
+      .single();
+
+    if (insertError) {
+      if (insertError.code === '23505') {
+        // Unique violation (already exists)
+        return new NextResponse(JSON.stringify({ error: "A folder with this path already exists." }), { status: 409 });
+      }
+      return new NextResponse(JSON.stringify({ error: "Failed to create folder", details: insertError.message }), { status: 500 });
+    }
+
+    return new NextResponse(JSON.stringify({
+      success: true,
+      folder: insertData,
+    }), { status: 201 });
+
+  } catch (error) {
+    console.error("POST /api/images/folders: Error processing request:", (error as Error).message);
+    return new NextResponse(JSON.stringify({ error: 'An unexpected error occurred.' }), { status: 500 });
+  }
+}
+  */
+
 
 }
