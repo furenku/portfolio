@@ -305,11 +305,12 @@ export const Images = () => {
   // Create folder
   const handleCreateFolder = async (folderPath: string) => {
     try {
-      const response = await fetch('/api/images/folder', {
+      const response = await fetch('/api/images/folders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: folderPath }),
       });
+
       if (!response.ok) throw new Error('Failed to create folder');
       // Update local folder structure
       const newStructure = { ...folderStructure };
