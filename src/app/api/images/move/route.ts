@@ -3,9 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 
 
 
-
-
-
 const supabaseUrl = process.env.MEDIASERVER_SUPABASE_URL;
 const supabaseAnonKey = process.env.MEDIASERVER_SUPABASE_ANON_KEY;
 
@@ -17,13 +14,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create a single Supabase client instance
 const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
 
+// --- Database Structure Verification ---
 // Use an immediately-invoked async function expression (IIAFE) to run the check
 // Store the promise to ensure handlers wait for it if needed, or handle errors directly.
 let isDbStructureValid = false; // Flag to track validity
 const dbCheckPromise = (async () => {
 
   const tableName = 'images';
-  const reqFields = ['id', 'filename', 'src', 'sizes', 'created_at', 'alt_text', 'caption', 'path'];
+  const reqFields = ['id', 'path'];
 
   try {
     // 1. Check basic table existence and select permission with a minimal query
@@ -47,7 +45,7 @@ const dbCheckPromise = (async () => {
     // This query will fail if any of these columns don't exist.
     const { error: columnError } = await supabase
       .from(tableName)
-      .select( reqFields.join(', ') ) // Select all required columns
+      .select(reqFields.join(', '))
       .limit(0);
 
     if (columnError) {
@@ -84,7 +82,7 @@ export async function GET() {
     await dbCheckPromise;
     
     if (!isDbStructureValid) {
-      console.error("GET /api/images: Aborting because database structure is invalid.");
+      console.error("GET /api/images/move: Aborting because database structure is invalid.");
       return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
     }
 
@@ -96,21 +94,23 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
 
+  await dbCheckPromise;
+
   if (!isDbStructureValid) {
-      console.error("POST /api/images: Aborting because database structure is invalid.");
+      console.error("POST /api/images/move: Aborting because database structure is invalid.");
       return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
   }
 
   try {
-    const formData = await req.formData();
-    console.log("POST /api/images: Form data parsed successfully.", formData);
+    const data = await req.json();
+    console.log("POST /api/images/move: Form data parsed successfully.", data);
     
   } catch (error) {
-    console.error("POST /api/images: Error parsing form data:", (error as Error).message);
+    console.error("POST /api/images/move: Error parsing form data:", (error as Error).message);
     return new NextResponse(JSON.stringify({ error: 'Error parsing form data. Please ensure the request is a valid multipart/form-data.' }), { status: 400 });
   }
 
-  return new NextResponse(JSON.stringify({ error: 'Impementation pending.' }), { status: 500 });
+  return new NextResponse(JSON.stringify({ error: 'Implementation pending. This endpoint is not yet available.' }), { status: 501 });
 
 
 }
