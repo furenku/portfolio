@@ -1,15 +1,11 @@
 import { useTranslations } from 'next-intl';
-import { setRequestLocale } from 'next-intl/server';
 import StandardLayout from '@/components/layout/StandardLayout';
 import { Button } from '@/components/ui/button';
 import Login from '@/components/auth/Login';
-type Props = {
-  params: {locale: string};
-};
 
-export default function IndexPage({params: {locale}}: Props) {
+
+export default function Page() {
   // Enable static rendering
-  setRequestLocale(locale);
 
   const t = useTranslations('sections.services.images');
 

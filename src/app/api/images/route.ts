@@ -307,7 +307,6 @@ const dbCheckPromise = (async () => {
   }
 })(); // Execute the check immediately
 
-await dbCheckPromise;
 
 // --- API Handlers ---
 

@@ -1,16 +1,10 @@
-import { setRequestLocale } from 'next-intl/server';
 import StandardLayout from '@/components/layout/StandardLayout';
 import Gallery from '@/components/Gallery';
-type Props = {
-  params: {locale: string};
-};
 import { getTranslations } from 'next-intl/server';
 import { headers } from 'next/headers';
 
 
-export default async function IndexPage({ params: { locale } }: Props) {
-  // Enable static rendering
-  setRequestLocale(locale);
+export default async function Page() {
 
   const headersList = await headers();
   const host = headersList.get('host');
@@ -22,7 +16,7 @@ export default async function IndexPage({ params: { locale } }: Props) {
   const images = await res.json();
 
   // Server-side translation function
-  const t = await getTranslations({ locale, namespace: 'sections.ui.components' });
+  const t = await getTranslations('sections.ui.components');
   
 
   return (

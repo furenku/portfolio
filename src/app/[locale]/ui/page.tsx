@@ -1,13 +1,8 @@
 import { useTranslations } from 'next-intl';
-import { setRequestLocale } from 'next-intl/server';
 import HomeLayout from '@/components/layout/HomeLayout';
-type Props = {
-  params: {locale: string};
-};
 
-export default function IndexPage({params: {locale}}: Props) {
-  // Enable static rendering
-  setRequestLocale(locale);
+
+export default function Page() {
 
   const t = useTranslations('sections.ui');
 
