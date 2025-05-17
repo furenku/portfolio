@@ -6,11 +6,20 @@ const nextConfig: NextConfig = {
     // ignoreDuringBuilds: true,    
   },
   images: {
-    domains: [
-      'picsum.photos',
-      'localhost',
-      'media.rodrigofrenk.dev',
-    ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'https',
+        hostname: 'media.rodrigofrenk.dev',
+      },
+    ]
     
   },
 };
