@@ -247,6 +247,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create a single Supabase client instance
 const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
 
+
 // --- Database Structure Verification ---
 // Use an immediately-invoked async function expression (IIAFE) to run the check
 // Store the promise to ensure handlers wait for it if needed, or handle errors directly.
@@ -254,6 +255,7 @@ let isDbStructureValid = false; // Flag to track validity
 const dbCheckPromise = (async () => {
 
   const tableName = 'images';
+  const reqFields = ['id', 'filename', 'src', 'sizes', 'created_at', 'alt_text', 'caption', 'path'];
 
   try {
     // 1. Check basic table existence and select permission with a minimal query
@@ -266,7 +268,7 @@ const dbCheckPromise = (async () => {
       // Check for specific "relation does not exist" error (Postgres code)
       if (existError.code === '42P01') {
         console.error(`FATAL: Table "${tableName}" does not exist. Please create it in Supabase.`);
-        console.error("Required columns: id, created_at, filename, src, sizes (jsonb), alt_text, caption");
+        console.error("Fields Required columns: "+ reqFields.join(", "));
       } else {
         console.error(`FATAL: Error querying table "${tableName}". Check permissions or connection.`, existError);
       }
@@ -277,7 +279,7 @@ const dbCheckPromise = (async () => {
     // This query will fail if any of these columns don't exist.
     const { error: columnError } = await supabase
       .from(tableName)
-      .select('id, filename, src, sizes, created_at, alt_text, caption')
+      .select( reqFields.join(', ') )
       .limit(0);
 
     if (columnError) {
@@ -297,7 +299,7 @@ const dbCheckPromise = (async () => {
     return true;
 
   } catch (error) {
-    console.error("Database verification process encountered an error:", error);
+    console.error("Database verification process encountered an error:", (error as Error).message);
     // Keep isDbStructureValid as false
     // Depending on your framework/setup, you might want to explicitly prevent handlers
     // from running, e.g., by not exporting them or having them check the flag.
