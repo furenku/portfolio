@@ -542,28 +542,57 @@ export const Images = () => {
           </div>
         </div>
 
-        {subFoldersInCurrentPath.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">Folders</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              {subFoldersInCurrentPath.map(folderName => {
-                const folderPath = currentPath ? `${currentPath}/${folderName}` : folderName;
-                return (
-                  <Folder
-                    key={folderPath} // Use full path for key for stability
-                    name={folderName}
-                    path={folderPath}
-                    isActive={false} // Determine active state if needed for styling
-                    onClick={() => handleFolderClick(folderName)}
-                    onDrop={(droppedImageIds) => handleMoveImagesToPath(droppedImageIds, folderPath)}
-                    onContextMenuOpen={handleFolderContextMenuOpen}
-                    selectedItemCount={selectedImages.size}
-                  />
-                );
-              })}
-            </div>
+        {/* Always show folders area, with .. only if not in root */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-2">Folders</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            {/* Show parent in all subfolders */}
+            {currentPath && (
+              <Folder
+                key=".."
+                name=".."
+                path={
+                  currentPath
+                    .split('/')
+                    .filter(Boolean)
+                    .slice(0, -1)
+                    .join('/')
+                }
+                isActive={false}
+                onClick={handleNavigateUp}
+                onDrop={(droppedImageIds) =>
+                  handleMoveImagesToPath(
+                    droppedImageIds,
+                    currentPath
+                      .split('/')
+                      .filter(Boolean)
+                      .slice(0, -1)
+                      .join('/')
+                  )
+                }
+                onContextMenuOpen={handleFolderContextMenuOpen}
+                selectedItemCount={selectedImages.size}
+              />
+            )}
+            {/* Root or subfolders */}
+            {subFoldersInCurrentPath.map(folderName => {
+              const folderPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+              return (
+                <Folder
+                  key={folderPath}
+                  name={folderName}
+                  path={folderPath}
+                  isActive={false}
+                  onClick={() => handleFolderClick(folderName)}
+                  onDrop={(droppedImageIds) => handleMoveImagesToPath(droppedImageIds, folderPath)}
+                  onContextMenuOpen={handleFolderContextMenuOpen}
+                  selectedItemCount={selectedImages.size}
+                />
+              );
+            })}
           </div>
-        )}
+        </div>
+
 
         
 
