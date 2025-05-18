@@ -1,0 +1,76 @@
+"use client";
+
+import React from 'react';
+import { FolderDisplayItem } from './FolderDisplayItem';
+
+interface FolderBrowserProps {
+  subFolders: string[];
+  currentPath: string;
+  onFolderClick: (folderName: string) => void;
+  onNavigateUp: () => void;
+  onDropItemToFolder: (imageIds: string[], targetPath: string) => void;
+  onContextMenuOpen: (event: React.MouseEvent, folderPath: string, folderName: string) => void;
+  selectedItemCount: number;
+}
+
+export const FolderBrowser: React.FC<FolderBrowserProps> = ({
+  subFolders,
+  currentPath,
+  onFolderClick,
+  onNavigateUp,
+  onDropItemToFolder,
+  onContextMenuOpen,
+  selectedItemCount,
+}) => {
+  return (
+    <div className="mb-6">
+      <h3 className="text-lg font-medium mb-2">Folders</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2">
+        {/* Show parent in all subfolders */}
+        {currentPath && (
+          <FolderDisplayItem
+            key=".."
+            name=".."
+            path={
+              currentPath
+                .split('/')
+                .filter(Boolean)
+                .slice(0, -1)
+                .join('/')
+            }
+            isActive={false}
+            onClick={onNavigateUp}
+            onDrop={(droppedImageIds) =>
+              onDropItemToFolder(
+                droppedImageIds,
+                currentPath
+                  .split('/')
+                  .filter(Boolean)
+                  .slice(0, -1)
+                  .join('/')
+              )
+            }
+            onContextMenuOpen={onContextMenuOpen}
+            selectedItemCount={selectedItemCount}
+          />
+        )}
+        {/* Root or subfolders */}
+        {subFolders.map(folderName => {
+          const folderPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+          return (
+            <FolderDisplayItem
+              key={folderPath}
+              name={folderName}
+              path={folderPath}
+              isActive={false}
+              onClick={() => onFolderClick(folderName)}
+              onDrop={(droppedImageIds) => onDropItemToFolder(droppedImageIds, folderPath)}
+              onContextMenuOpen={onContextMenuOpen}
+              selectedItemCount={selectedItemCount}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
