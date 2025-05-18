@@ -521,7 +521,7 @@ export const Images = () => {
       <div className={`p-4 ${isImageDragInProgress ? 'opacity-60 transition-opacity' : ''}`}>
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
-            <h2 className="text-2xl font-bold">Images</h2>
+            
             {currentPath && (
               <div className="flex items-center ml-4">
                 <button

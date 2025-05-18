@@ -10,8 +10,8 @@ export default function DemoPage() {
     <StandardLayout>
       {/* <BackgroundAnimation /> */}
       <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-stretch">
-        <h1>{t('title')}</h1>
-        <div className="flex py-12 flex-1 md:h-[60vh] md:flex-shrink flex-col gap-4 justify-center">
+        {/* <h1>{t('title')}</h1> */}
+        <div className="flex flex-1 md:h-[60vh] md:flex-shrink flex-col gap-4 justify-center">
           <Images/>
         </div>
 
