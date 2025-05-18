@@ -93,7 +93,6 @@ async function getFolderIdByPath(path: string): Promise<number | null> {
       .from('folders')
       .select('id')
       .eq('name', folderName)
-      .eq('parent_id', parentId)
       .maybeSingle();
     
     if (lookupError) {
@@ -127,16 +126,7 @@ async function getFolderIdByPath(path: string): Promise<number | null> {
   return parentId;
 }
 
-export async function GET() {
-  await dbCheckPromise;
 
-  if (!isDbStructureValid) {
-      console.error("GET /api/images/move: Aborting because database structure is invalid.");
-    return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
-  }
-
-    return new NextResponse(JSON.stringify({ error: 'Impementation pending.' }), { status: 500 });
-}
 
 export async function POST(req: NextRequest) {
   await dbCheckPromise;

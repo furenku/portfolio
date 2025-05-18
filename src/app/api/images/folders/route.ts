@@ -78,18 +78,33 @@ const dbCheckPromise = (async () => {
 
 
 
-
 export async function GET() {
-    await dbCheckPromise;
+  await dbCheckPromise;
+  
+  if (!isDbStructureValid) {
+    console.error("GET /api/images/folders: Aborting because database structure is invalid.");
+    return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
+  }
+
+  try {
+    // Fetch all folders with their parent relationships
+    const { data: folders, error } = await supabase
+      .from('folders')
+      .select('id, name, parent_id')
+      .order('name');
     
-    if (!isDbStructureValid) {
-      console.error("GET /api/images/folders: Aborting because database structure is invalid.");
-      return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
+    if (error) {
+      console.error("Error fetching folders:", error);
+      return new NextResponse(JSON.stringify({ error: 'Failed to fetch folders' }), { status: 500 });
     }
-
-    return new NextResponse(JSON.stringify({ error: 'Impementation pending.' }), { status: 500 });
-
+    
+    return new NextResponse(JSON.stringify(folders || []), { status: 200 });
+  } catch (error) {
+    console.error("Error in GET /api/images/folders:", error);
+    return new NextResponse(JSON.stringify({ error: 'Server error fetching folders' }), { status: 500 });
+  }
 }
+
 
 export async function POST(req: NextRequest) {
   await dbCheckPromise;

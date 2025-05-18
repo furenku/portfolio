@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ImageContainer } from '@/components/ImageContainer';
-import { ApiImage } from '@/types/media-server';
+import { ApiImage, Folder as FolderType } from '@/types/media-server'; // Ensure this type is defined
 import { FolderIcon, Squares2X2Icon, ListBulletIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -203,6 +203,7 @@ const CreateFolderModal = ({
 // Main Images Component
 export const Images = () => {
   const [images, setImages] = useState<ApiImage[]>([]);
+  const [folders, setFolders] = useState<FolderType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
@@ -214,48 +215,99 @@ export const Images = () => {
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Fetch images
+  // Fetch images and folders
   useEffect(() => {
-    const fetchImages = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/images');
-        if (!response.ok) throw new Error('Failed to fetch images');
-        const data: ApiImage[] = await response.json();
-        setImages(data);
-        organizeImagesIntoFolders(data);
+
+        // Fetch both images and folders in parallel
+        const [imagesResponse, foldersResponse] = await Promise.all([
+          fetch('/api/images'),
+          fetch('/api/images/folders')
+        ]);
+        if (!imagesResponse.ok) throw new Error('Failed to fetch images');
+        if (!foldersResponse.ok) throw new Error('Failed to fetch folders');
+        const imagesData: ApiImage[] = await imagesResponse.json();
+        const foldersData: FolderType[] = await foldersResponse.json();
+        setImages(imagesData);
+        setFolders(foldersData);
+
+        // Organize images using the folder data for validation
+        organizeImagesIntoFolders(imagesData, foldersData);
       } catch (err) {
         setError((err as Error).message);
       } finally {
         setLoading(false);
       }
     };
-    fetchImages();
+    fetchData();
   }, []);
 
-  // Build folders structure
-  const organizeImagesIntoFolders = (imageList: ApiImage[]) => {
+  // Build folders structure - updated to use fetched folders
+  const organizeImagesIntoFolders = (imageList: ApiImage[], folderList: FolderType[]) => {
     const structure: FolderStructure = {
       root: { images: [], subFolders: {} },
     };
+
+    // First add folders to structure
+    const folderMap = new Map<number, FolderType>();
+    folderList.forEach(folder => {
+      folderMap.set(folder.id, folder);
+    });
+
+    // Helper to get full path of a folder
+    const getFolderPath = (folderId: number | null): string => {
+      if (folderId === null) return '';
+
+      const folder = folderMap.get(folderId);
+      if (!folder) return '';
+
+      const parentPath = getFolderPath(folder.parent_id);
+      return parentPath ? `${parentPath}/${folder.name}` : folder.name;
+    };
+
+    // Add folders to structure
+    folderList.forEach(folder => {
+      const path = getFolderPath(folder.id);
+      if (!path) return;
+
+      const parts = path.split('/');
+      let current = structure.root;
+
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        if (!current.subFolders[part]) {
+          current.subFolders[part] = { images: [], subFolders: {} };
+        }
+        current = current.subFolders[part];
+      }
+    });
+
+    // Then add images to folders
     imageList.forEach(image => {
       const path = image.path || '';
       if (!path) {
         structure.root.images.push(image);
         return;
       }
+
       const folders = path.split('/').filter(Boolean);
       let currentLevel = structure.root;
-      folders.forEach((folder, idx) => {
+
+      for (let i = 0; i < folders.length; i++) {
+        const folder = folders[i];
         if (!currentLevel.subFolders[folder]) {
           currentLevel.subFolders[folder] = { images: [], subFolders: {} };
         }
+
         currentLevel = currentLevel.subFolders[folder];
-        if (idx === folders.length - 1) {
+        if (i === folders.length - 1) {
           currentLevel.images.push(image);
         }
-      });
+      }
     });
+
     setFolderStructure(structure);
   };
 
@@ -266,8 +318,8 @@ export const Images = () => {
     let current = folderStructure.root;
     for (const folder of folders) {
       if (!current.subFolders[folder]) return { images: [], subFolders: {} };
-      current = current.subFolders[folder];
-    }
+        current = current.subFolders[folder];
+      }
     return current;
   };
 
@@ -342,7 +394,7 @@ export const Images = () => {
         img.id === imageId ? { ...img, path: targetPath } : img
       );
       setImages(updatedImages);
-      organizeImagesIntoFolders(updatedImages);
+      organizeImagesIntoFolders(updatedImages, folders);
       setSelectedImages(prev => {
         const newSelection = new Set(prev);
         newSelection.delete(imageId);
@@ -370,7 +422,7 @@ export const Images = () => {
           : img
       );
       setImages(updatedImages);
-      organizeImagesIntoFolders(updatedImages);
+      organizeImagesIntoFolders(updatedImages, folders);
       setSelectedImages(new Set());
     } catch (err) {
       setError((err as Error).message);
