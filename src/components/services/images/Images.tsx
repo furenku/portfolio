@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ImageContainer } from '@/components/ImageContainer';
 import { ApiImage, Folder as FolderType } from '@/types/media-server'; // Ensure this type is defined
 import { FolderIcon, Squares2X2Icon, ListBulletIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { DndProvider, useDrag, useDrop, DragObjectWithType } from 'react-dnd';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
 // Types for folder structure
@@ -16,7 +16,7 @@ type FolderStructure = { root: FolderNode };
 type ViewMode = 'grid' | 'list';
 
 // Drag item type for images
-interface ImageDragItem extends DragObjectWithType {
+interface ImageDragItem {
   imageIds: string[];
   representativeImageSrc?: string; // Optional: for custom drag preview
   type: 'IMAGE_COLLECTION';
@@ -262,32 +262,10 @@ export const Images = () => {
   const [folderContextMenu, setFolderContextMenu] = useState<{ x: number; y: number; path: string; name: string } | null>(null);
 
   // Fetch images and folders
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [imagesResponse, foldersResponse] = await Promise.all([
-          fetch('/api/images'),
-          fetch('/api/images/folders')
-        ]);
-        if (!imagesResponse.ok) throw new Error('Failed to fetch images');
-        if (!foldersResponse.ok) throw new Error('Failed to fetch folders');
-        const imagesData: ApiImage[] = await imagesResponse.json();
-        const foldersData: FolderType[] = await foldersResponse.json();
-        setImages(imagesData);
-        setFolders(foldersData);
-        organizeImagesIntoFolders(imagesData, foldersData);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  
 
   // Organize images (memoized with useCallback if imageList/folderList are stable, or just keep as is)
-  const organizeImagesIntoFolders = (imageList: ApiImage[], folderList: FolderType[]) => {
+  const organizeImagesIntoFolders = useCallback((imageList: ApiImage[], folderList: FolderType[]) => {
     const structure: FolderStructure = {
       root: { images: [], subFolders: {} },
     };
@@ -298,7 +276,7 @@ export const Images = () => {
       if (folderId === null) return '';
       const folder = folderMap.get(folderId);
       if (!folder) return '';
-      const parentPath = getFolderPath(folder.parent_id);
+      const parentPath = getFolderPath(folder.parent_id || null);
       return parentPath ? `${parentPath}/${folder.name}` : folder.name;
     };
 
@@ -335,8 +313,33 @@ export const Images = () => {
       }
     });
     setFolderStructure(structure);
-  };
+  }, [setFolderStructure]);
 
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [imagesResponse, foldersResponse] = await Promise.all([
+          fetch('/api/images'),
+          fetch('/api/images/folders')
+        ]);
+        if (!imagesResponse.ok) throw new Error('Failed to fetch images');
+        if (!foldersResponse.ok) throw new Error('Failed to fetch folders');
+        const imagesData: ApiImage[] = await imagesResponse.json();
+        const foldersData: FolderType[] = await foldersResponse.json();
+        setImages(imagesData);
+        setFolders(foldersData);
+        organizeImagesIntoFolders(imagesData, foldersData);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [organizeImagesIntoFolders]);
+  
   // Get current folder (memoized with useCallback if dependencies are stable)
   const getCurrentFolder = useCallback((): FolderNode => {
     if (!currentPath) return folderStructure.root;
@@ -400,7 +403,7 @@ export const Images = () => {
   };
 
   // Refactored: Handles moving one or more images to a specific path
-  const handleMoveImagesToPath = async (imageIdsToMove: string[], targetPath: string) => {
+  const handleMoveImagesToPath = useCallback(async (imageIdsToMove: string[], targetPath: string) => {
     if (imageIdsToMove.length === 0) return;
     try {
       const response = await fetch('/api/images/move', {
@@ -425,7 +428,7 @@ export const Images = () => {
     } catch (err) {
       setError((err as Error).message);
     }
-  };
+  }, [images, folders, setImages, setSelectedImages, setError, organizeImagesIntoFolders]);
   
   // Bulk move selected images to the CURRENT folder (kept for existing button, if any)
   // Consider removing if all moves go through handleMoveImagesToPath
@@ -464,7 +467,7 @@ export const Images = () => {
 
   useEffect(() => {
     if (folderContextMenu) {
-      const close = (e: MouseEvent) => {
+      const close = () => {
         // Check if the click is outside the context menu if it's rendered
         // For simplicity, this closes on any window click.
         // More robust solution would check e.target.
