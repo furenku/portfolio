@@ -492,15 +492,7 @@ export const Images = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      {/* Global Drag Overlay */}
-      {isImageDragInProgress && (
-        <div className="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center">
-          <div className="absolute inset-0 bg-blue-200/40"></div>
-          <div className="relative z-10 font-bold text-blue-700 text-2xl animate-pulse">
-            Dragging {currentlyDraggedImageIds.length} item(s)...
-          </div>
-        </div>
-      )}
+     
 
       {/* Folder Context Menu */}
       {folderContextMenu && selectedImages.size > 0 && (
@@ -518,7 +510,7 @@ export const Images = () => {
         </div>
       )}
 
-      <div className={`p-4 ${isImageDragInProgress ? 'opacity-60 transition-opacity' : ''}`}>
+      <div className={`p-4 ${isImageDragInProgress ? 'opacity-100 transition-opacity' : ''}`}>
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
             
