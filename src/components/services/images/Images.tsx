@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ImageContainer } from '@/components/ImageContainer';
 import { ApiImage, Folder as FolderType } from '@/types/media-server'; // Ensure this type is defined
 import { FolderIcon, Squares2X2Icon, ListBulletIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { DndProvider, useDrag, useDrop, DragObjectWithType } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
 // Types for folder structure
@@ -15,37 +15,61 @@ type FolderNode = {
 type FolderStructure = { root: FolderNode };
 type ViewMode = 'grid' | 'list';
 
+// Drag item type for images
+interface ImageDragItem extends DragObjectWithType {
+  imageIds: string[];
+  representativeImageSrc?: string; // Optional: for custom drag preview
+  type: 'IMAGE_COLLECTION';
+}
+
 // ======================
 // ImageItem: Draggable image card
-    const ImageItem = ({
-        image,
-        isSelected,
-        onClick,
-        viewMode,
-        onDragStart,
-        onDragEnd,
-      }: {
-        image: ApiImage;
-        isSelected: boolean;
-        onClick: (e: React.MouseEvent, image: ApiImage) => void;
-        viewMode: ViewMode;
-        onDragStart: () => void;
-        onDragEnd: () => void;
-      }) => {
-        const [{ isDragging }, drag] = useDrag(() => ({
-          type: 'IMAGE',
-          item: () => {
-            onDragStart();                         // <--- Move `onDragStart` into item()
-            return { id: image.id, image };
-          },
-          collect: monitor => ({
-            isDragging: !!monitor.isDragging(),
-          }),
-          end: () => {
-            onDragEnd();
-          },
-    }), [image, onDragStart, onDragEnd]);      // <--- Make sure dependencies are included
+const ImageItem = ({
+  image,
+  isSelected,
+  onClick,
+  viewMode,
+  onActualDragStart, // Renamed from onDragStart to avoid confusion
+  onActualDragEnd,   // Renamed from onDragEnd
+  selectedImageIds, // Pass all selected image IDs
+  isGloballyDragging, // Pass global dragging state for styling non-source selected items
+}: {
+  image: ApiImage;
+  isSelected: boolean;
+  onClick: (e: React.MouseEvent, image: ApiImage) => void;
+  viewMode: ViewMode;
+  onActualDragStart: (draggedIds: string[]) => void;
+  onActualDragEnd: () => void;
+  selectedImageIds: Set<string>;
+  isGloballyDragging: boolean;
+}) => {
+  const [{ isDragging: isDragSource }, drag] = useDrag<ImageDragItem, void, { isDragging: boolean }>(() => ({
+    type: 'IMAGE_COLLECTION',
+    item: () => {
+      const imageIdStr = image.id.toString();
+      // If the current image is selected, drag all selected images.
+      // Otherwise, drag only the current image.
+      const idsToDrag = selectedImageIds.has(imageIdStr) && selectedImageIds.size > 0
+        ? Array.from(selectedImageIds)
+        : [imageIdStr];
       
+      onActualDragStart(idsToDrag);
+      return {
+        imageIds: idsToDrag,
+        representativeImageSrc: image.sizes.sm?.src || image.src,
+        type: 'IMAGE_COLLECTION'
+      };
+    },
+    collect: monitor => ({
+      isDragging: !!monitor.isDragging(),
+    }),
+    end: () => {
+      onActualDragEnd();
+    },
+  }), [image, selectedImageIds, onActualDragStart, onActualDragEnd]); // Dependencies
+
+  // An item is effectively being dragged if it's the source or if it's selected and a global drag is in progress.
+  const isEffectivelyDragging = isDragSource || (isGloballyDragging && isSelected);
 
   return (
     <div
@@ -53,11 +77,11 @@ type ViewMode = 'grid' | 'list';
       className={`
         ${viewMode === 'grid' ? 'w-40 h-40 m-2' : 'w-full h-20 my-1 flex items-center'}
         ${isSelected ? 'ring-2 ring-blue-500' : ''}
-        ${isDragging ? 'opacity-50' : 'opacity-100'}
+        ${isEffectivelyDragging ? 'opacity-50' : 'opacity-100'}
         cursor-pointer relative overflow-hidden rounded-md shadow-sm transition-all
       `}
       onClick={(e) => onClick(e, image)}
-      style={{ zIndex: isDragging ? 50 : 'auto' }}
+      style={{ zIndex: isDragSource ? 50 : 'auto' }} // Ensure drag source is on top
     >
       <div className={`relative ${viewMode === 'grid' ? 'h-32' : 'h-full w-24 mr-4'}`}>
         <ImageContainer
@@ -84,31 +108,45 @@ type ViewMode = 'grid' | 'list';
 };
 
 // ======================
-// Folder: Drop target for images
+// Folder: Drop target for images and context menu source
 const Folder = ({
   name,
+  path, // Full path of the folder
   isActive,
   onClick,
-  onDrop,
+  onDrop, // Now accepts an array of image IDs
+  onContextMenuOpen, // For opening custom context menu
+  selectedItemCount, // To enable/disable context menu option
   highlight,
 }: {
   name: string;
+  path: string;
   isActive: boolean;
   onClick: () => void;
-  onDrop: (imageId: string) => void;
+  onDrop: (imageIds: string[]) => void;
+  onContextMenuOpen: (event: React.MouseEvent, folderPath: string, folderName: string) => void;
+  selectedItemCount: number;
   highlight?: boolean;
 }) => {
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: 'IMAGE',
-    drop: (item: { id: string }) => {
-      onDrop(item.id);
-      return { name };
+  const [{ isOver, canDrop }, drop] = useDrop(() => ({
+    accept: 'IMAGE_COLLECTION',
+    drop: (item: ImageDragItem) => { // Expecting ImageDragItem
+      onDrop(item.imageIds);
+      return { name }; // name of the drop target (folder)
     },
     collect: monitor => ({
       isOver: !!monitor.isOver(),
       canDrop: !!monitor.canDrop(),
     }),
-  }), [onDrop, name]);
+  }), [onDrop, name, path]); // Added path to dependencies if onDrop depends on it closure-wise
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if (selectedItemCount > 0) { // Only open context menu if items are selected
+      e.preventDefault();
+      onContextMenuOpen(e, path, name);
+    }
+    // If selectedItemCount is 0, allow default context menu or do nothing.
+  };
 
   return (
     <div
@@ -116,10 +154,12 @@ const Folder = ({
       className={`
         flex items-center p-2 my-1 rounded-md cursor-pointer transition
         ${isActive ? 'bg-blue-100' : 'hover:bg-gray-100'}
-        ${isOver || highlight ? 'bg-blue-200' : ''}
-        border border-dashed ${isOver ? 'border-blue-500' : 'border-transparent'}
+        ${isOver && canDrop ? 'bg-blue-200 ring-2 ring-blue-500' : ''}
+        ${highlight ? 'bg-blue-200' : ''}
+        border border-dashed ${isOver && canDrop ? 'border-blue-500' : 'border-transparent'}
       `}
       onClick={onClick}
+      onContextMenu={handleContextMenu}
       style={{ fontWeight: isActive ? 700 : 400 }}
     >
       <FolderIcon className="w-5 h-5 mr-2 text-blue-500" />
@@ -129,7 +169,7 @@ const Folder = ({
 };
 
 // ======================
-// CreateFolderModal
+// CreateFolderModal (no changes needed for this refactor)
 const CreateFolderModal = ({
   isOpen,
   onClose,
@@ -213,15 +253,19 @@ export const Images = () => {
     root: { images: [], subFolders: {} },
   });
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
+  
+  // New state for drag operations
+  const [isImageDragInProgress, setIsImageDragInProgress] = useState(false);
+  const [currentlyDraggedImageIds, setCurrentlyDraggedImageIds] = useState<string[]>([]);
+
+  // New state for folder context menu
+  const [folderContextMenu, setFolderContextMenu] = useState<{ x: number; y: number; path: string; name: string } | null>(null);
 
   // Fetch images and folders
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-
-        // Fetch both images and folders in parallel
         const [imagesResponse, foldersResponse] = await Promise.all([
           fetch('/api/images'),
           fetch('/api/images/folders')
@@ -232,8 +276,6 @@ export const Images = () => {
         const foldersData: FolderType[] = await foldersResponse.json();
         setImages(imagesData);
         setFolders(foldersData);
-
-        // Organize images using the folder data for validation
         organizeImagesIntoFolders(imagesData, foldersData);
       } catch (err) {
         setError((err as Error).message);
@@ -244,39 +286,28 @@ export const Images = () => {
     fetchData();
   }, []);
 
-  // Build folders structure - updated to use fetched folders
+  // Organize images (memoized with useCallback if imageList/folderList are stable, or just keep as is)
   const organizeImagesIntoFolders = (imageList: ApiImage[], folderList: FolderType[]) => {
     const structure: FolderStructure = {
       root: { images: [], subFolders: {} },
     };
-
-    // First add folders to structure
     const folderMap = new Map<number, FolderType>();
-    folderList.forEach(folder => {
-      folderMap.set(folder.id, folder);
-    });
+    folderList.forEach(folder => folderMap.set(folder.id, folder));
 
-    // Helper to get full path of a folder
     const getFolderPath = (folderId: number | null): string => {
       if (folderId === null) return '';
-
       const folder = folderMap.get(folderId);
       if (!folder) return '';
-
       const parentPath = getFolderPath(folder.parent_id);
       return parentPath ? `${parentPath}/${folder.name}` : folder.name;
     };
 
-    // Add folders to structure
     folderList.forEach(folder => {
       const path = getFolderPath(folder.id);
       if (!path) return;
-
       const parts = path.split('/');
       let current = structure.root;
-
-      for (let i = 0; i < parts.length; i++) {
-        const part = parts[i];
+      for (const part of parts) {
         if (!current.subFolders[part]) {
           current.subFolders[part] = { images: [], subFolders: {} };
         }
@@ -284,46 +315,40 @@ export const Images = () => {
       }
     });
 
-    // Then add images to folders
     imageList.forEach(image => {
       const path = image.path || '';
       if (!path) {
         structure.root.images.push(image);
         return;
       }
-
-      const folders = path.split('/').filter(Boolean);
+      const foldersInPath = path.split('/').filter(Boolean);
       let currentLevel = structure.root;
-
-      for (let i = 0; i < folders.length; i++) {
-        const folder = folders[i];
-        if (!currentLevel.subFolders[folder]) {
-          currentLevel.subFolders[folder] = { images: [], subFolders: {} };
+      for (let i = 0; i < foldersInPath.length; i++) {
+        const folderName = foldersInPath[i];
+        if (!currentLevel.subFolders[folderName]) {
+          currentLevel.subFolders[folderName] = { images: [], subFolders: {} };
         }
-
-        currentLevel = currentLevel.subFolders[folder];
-        if (i === folders.length - 1) {
+        currentLevel = currentLevel.subFolders[folderName];
+        if (i === foldersInPath.length - 1) {
           currentLevel.images.push(image);
         }
       }
     });
-
     setFolderStructure(structure);
   };
 
-  // Get current folder
-  const getCurrentFolder = (): FolderNode => {
+  // Get current folder (memoized with useCallback if dependencies are stable)
+  const getCurrentFolder = useCallback((): FolderNode => {
     if (!currentPath) return folderStructure.root;
-    const folders = currentPath.split('/').filter(Boolean);
+    const foldersToTraverse = currentPath.split('/').filter(Boolean);
     let current = folderStructure.root;
-    for (const folder of folders) {
-      if (!current.subFolders[folder]) return { images: [], subFolders: {} };
-        current = current.subFolders[folder];
-      }
+    for (const folder of foldersToTraverse) {
+      if (!current.subFolders[folder]) return { images: [], subFolders: {} }; // Should ideally not happen if paths are correct
+      current = current.subFolders[folder];
+    }
     return current;
-  };
+  }, [currentPath, folderStructure]);
 
-  // Select image
   const handleImageClick = (e: React.MouseEvent, image: ApiImage) => {
     const idStr = String(image.id);
     if (e.ctrlKey || e.metaKey) {
@@ -338,23 +363,22 @@ export const Images = () => {
     }
   };
 
-  // Go to subfolder
   const handleFolderClick = (folderName: string) => {
     const newPath = currentPath ? `${currentPath}/${folderName}` : folderName;
     setCurrentPath(newPath);
     setSelectedImages(new Set());
+    setFolderContextMenu(null); // Close context menu on navigation
   };
 
-  // Go up
   const handleNavigateUp = () => {
     if (!currentPath) return;
     const parts = currentPath.split('/').filter(Boolean);
     parts.pop();
     setCurrentPath(parts.join('/'));
     setSelectedImages(new Set());
+    setFolderContextMenu(null); // Close context menu
   };
 
-  // Create folder
   const handleCreateFolder = async (folderPath: string) => {
     try {
       const response = await fetch('/api/images/folders', {
@@ -362,94 +386,136 @@ export const Images = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: folderPath }),
       });
-
       if (!response.ok) throw new Error('Failed to create folder');
-      // Update local folder structure
-      const newStructure = { ...folderStructure };
-      const folders = folderPath.split('/').filter(Boolean);
-      let current = newStructure.root;
-      for (const folder of folders) {
-        if (!current.subFolders[folder]) {
-          current.subFolders[folder] = { images: [], subFolders: {} };
-        }
-        current = current.subFolders[folder];
-      }
-      setFolderStructure(newStructure);
+      const newFolderData = await response.json(); // Assuming API returns the new folder
+      
+      // Update folders state and re-organize
+      // This part assumes newFolderData is compatible with FolderType
+      setFolders(prevFolders => [...prevFolders, newFolderData as FolderType]);
+      organizeImagesIntoFolders(images, [...folders, newFolderData as FolderType]);
+
     } catch (err) {
       setError((err as Error).message);
     }
   };
 
-  // Move ONE image into a folder
-  const handleMoveToFolder = async (imageId: string, targetPath: string) => {
+  // Refactored: Handles moving one or more images to a specific path
+  const handleMoveImagesToPath = async (imageIdsToMove: string[], targetPath: string) => {
+    if (imageIdsToMove.length === 0) return;
     try {
       const response = await fetch('/api/images/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageIds: [imageId], targetPath }),
+        body: JSON.stringify({ imageIds: imageIdsToMove, targetPath }),
       });
-      if (!response.ok) throw new Error('Failed to move image');
-      // Update local state
+      if (!response.ok) throw new Error(`Failed to move ${imageIdsToMove.length > 1 ? 'images' : 'image'}`);
+      
       const updatedImages = images.map(img =>
-        img.id === imageId ? { ...img, path: targetPath } : img
+        imageIdsToMove.includes(img.id.toString()) ? { ...img, path: targetPath } : img
       );
       setImages(updatedImages);
-      organizeImagesIntoFolders(updatedImages, folders);
+      organizeImagesIntoFolders(updatedImages, folders); // Re-organize
+      
+      // Clear moved images from selection
       setSelectedImages(prev => {
         const newSelection = new Set(prev);
-        newSelection.delete(imageId);
+        imageIdsToMove.forEach(id => newSelection.delete(id));
         return newSelection;
       });
     } catch (err) {
       setError((err as Error).message);
     }
   };
+  
+  // Bulk move selected images to the CURRENT folder (kept for existing button, if any)
+  // Consider removing if all moves go through handleMoveImagesToPath
+  
 
-  // Bulk move selected images into current folder
-  const handleBulkMove = async () => {
-    if (selectedImages.size === 0) return;
-    try {
-      const imageIds = Array.from(selectedImages);
-      const response = await fetch('/api/images/move', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageIds, targetPath: currentPath }),
-      });
-      if (!response.ok) throw new Error('Failed to move images');
-      const updatedImages = images.map(img =>
-        selectedImages.has((img.id).toString())
-          ? { ...img, path: currentPath }
-          : img
-      );
-      setImages(updatedImages);
-      organizeImagesIntoFolders(updatedImages, folders);
-      setSelectedImages(new Set());
-    } catch (err) {
-      setError((err as Error).message);
+  // Drag Handlers for ImageItem
+  const handleActualImageDragStart = useCallback((draggedIds: string[]) => {
+    setIsImageDragInProgress(true);
+    setCurrentlyDraggedImageIds(draggedIds);
+  }, []);
+
+  const handleActualImageDragEnd = useCallback(() => {
+    setIsImageDragInProgress(false);
+    setCurrentlyDraggedImageIds([]);
+  }, []);
+
+  // Context Menu Handlers for Folder
+  const handleFolderContextMenuOpen = useCallback((event: React.MouseEvent, path: string, name: string) => {
+    event.preventDefault();
+    if (selectedImages.size > 0) {
+      setFolderContextMenu({ x: event.clientX, y: event.clientY, path, name });
     }
-  };
+  }, [selectedImages.size]);
 
-  // === Render ===
-  const currentFolder = getCurrentFolder();
-  const currentFolderImages = currentFolder.images;
-  const subFolders = Object.keys(currentFolder.subFolders);
+  const handleCloseContextMenu = useCallback(() => {
+    setFolderContextMenu(null);
+  }, []);
+
+  const handleMoveSelectedToContextFolder = useCallback(async () => {
+    if (folderContextMenu && selectedImages.size > 0) {
+      const imageIds = Array.from(selectedImages);
+      await handleMoveImagesToPath(imageIds, folderContextMenu.path);
+      handleCloseContextMenu();
+    }
+  }, [folderContextMenu, selectedImages, handleMoveImagesToPath, handleCloseContextMenu]); // Added dependencies
+
+  useEffect(() => {
+    if (folderContextMenu) {
+      const close = (e: MouseEvent) => {
+        // Check if the click is outside the context menu if it's rendered
+        // For simplicity, this closes on any window click.
+        // More robust solution would check e.target.
+        handleCloseContextMenu();
+      };
+      window.addEventListener('click', close);
+      window.addEventListener('contextmenu', close, { capture: true }); // Close on another right click
+      return () => {
+        window.removeEventListener('click', close);
+        window.removeEventListener('contextmenu', close, { capture: true });
+      };
+    }
+  }, [folderContextMenu, handleCloseContextMenu]);
+
+
+  const currentFolderData = getCurrentFolder();
+  const currentFolderImages = currentFolderData.images;
+  const subFoldersInCurrentPath = Object.keys(currentFolderData.subFolders);
 
   if (loading) return <div className="flex justify-center p-8">Loading images...</div>;
   if (error) return <div className="text-red-500 p-8">{error}</div>;
 
   return (
     <DndProvider backend={HTML5Backend}>
-      {/* Overlay: SHOW WHILE DRAGGING */}
-      {isDragging && (
-        <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
+      {/* Global Drag Overlay */}
+      {isImageDragInProgress && (
+        <div className="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center">
           <div className="absolute inset-0 bg-blue-200/40"></div>
           <div className="relative z-10 font-bold text-blue-700 text-2xl animate-pulse">
-            Dragging image...
+            Dragging {currentlyDraggedImageIds.length} item(s)...
           </div>
         </div>
       )}
 
-      <div className={`p-4 ${isDragging ? 'opacity-60 transition' : ''}`}>
+      {/* Folder Context Menu */}
+      {folderContextMenu && selectedImages.size > 0 && (
+        <div
+          style={{ top: folderContextMenu.y, left: folderContextMenu.x, position: 'fixed', zIndex: 150 }}
+          className="bg-white shadow-lg rounded-md py-1 border border-gray-200 min-w-[200px]"
+          onClick={(e) => e.stopPropagation()} // Prevent click inside from closing immediately
+        >
+          <button
+            onClick={handleMoveSelectedToContextFolder}
+            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+          >
+            Move {selectedImages.size} item(s) to "{folderContextMenu.name}"
+          </button>
+        </div>
+      )}
+
+      <div className={`p-4 ${isImageDragInProgress ? 'opacity-60 transition-opacity' : ''}`}>
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center">
             <h2 className="text-2xl font-bold">Images</h2>
@@ -467,61 +533,37 @@ export const Images = () => {
             )}
           </div>
           <div className="flex space-x-2">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-gray-200' : ''}`}
-            >
-              <Squares2X2Icon className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-gray-200' : ''}`}
-            >
-              <ListBulletIcon className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setShowCreateFolderModal(true)}
-              className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-md"
-            >
-              <PlusIcon className="w-4 h-4 mr-1" />
-              New Folder
-            </button>
+            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-gray-200' : 'hover:bg-gray-100'}`} aria-label="Grid view"><Squares2X2Icon className="w-5 h-5" /></button>
+            <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-gray-200' : 'hover:bg-gray-100'}`} aria-label="List view"><ListBulletIcon className="w-5 h-5" /></button>
+            <button onClick={() => setShowCreateFolderModal(true)} className="flex items-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"><PlusIcon className="w-4 h-4 mr-1" /> New Folder</button>
           </div>
         </div>
 
-        {/* Folders */}
-        {subFolders.length > 0 && (
+        {subFoldersInCurrentPath.length > 0 && (
           <div className="mb-6">
             <h3 className="text-lg font-medium mb-2">Folders</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              {subFolders.map(folder => (
-                <Folder
-                  key={folder}
-                  name={folder}
-                  isActive={false}
-                  onClick={() => handleFolderClick(folder)}
-                  onDrop={imageId =>
-                    handleMoveToFolder(imageId, currentPath ? `${currentPath}/${folder}` : folder)
-                  }
-                />
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              {subFoldersInCurrentPath.map(folderName => {
+                const folderPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+                return (
+                  <Folder
+                    key={folderPath} // Use full path for key for stability
+                    name={folderName}
+                    path={folderPath}
+                    isActive={false} // Determine active state if needed for styling
+                    onClick={() => handleFolderClick(folderName)}
+                    onDrop={(droppedImageIds) => handleMoveImagesToPath(droppedImageIds, folderPath)}
+                    onContextMenuOpen={handleFolderContextMenuOpen}
+                    selectedItemCount={selectedImages.size}
+                  />
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* BULK MOVE BUTTON */}
-        {selectedImages.size > 0 && (
-          <div className="mb-4">
-            <button
-              onClick={handleBulkMove}
-              className="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition"
-            >
-              Move selected images here ({selectedImages.size})
-            </button>
-          </div>
-        )}
+        
 
-        {/* Images */}
         <div className="mt-4">
           <h3 className="text-lg font-medium mb-2">
             Images {currentFolderImages.length > 0 && `(${currentFolderImages.length})`}
@@ -529,13 +571,13 @@ export const Images = () => {
           <div
             className={
               viewMode === 'grid'
-                ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2'
+                ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2'
                 : 'flex flex-col'
             }
           >
             {currentFolderImages.length === 0 ? (
               <div className="col-span-full text-center py-8 text-gray-500">
-                No images in this folder
+                No images in this folder.
               </div>
             ) : (
               currentFolderImages.map(image => (
@@ -545,15 +587,16 @@ export const Images = () => {
                   isSelected={selectedImages.has(image.id.toString())}
                   onClick={handleImageClick}
                   viewMode={viewMode}
-                  onDragStart={() => setIsDragging(true)}
-                  onDragEnd={() => setIsDragging(false)}
+                  onActualDragStart={handleActualImageDragStart}
+                  onActualDragEnd={handleActualImageDragEnd}
+                  selectedImageIds={selectedImages}
+                  isGloballyDragging={isImageDragInProgress}
                 />
               ))
             )}
           </div>
         </div>
 
-        {/* Modal */}
         <CreateFolderModal
           isOpen={showCreateFolderModal}
           onClose={() => setShowCreateFolderModal(false)}
