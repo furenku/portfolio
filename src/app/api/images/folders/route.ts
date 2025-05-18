@@ -112,7 +112,31 @@ export async function POST(req: NextRequest) {
 
   return new NextResponse(JSON.stringify({ error: 'Implementation pending. This endpoint is not yet available.' }), { status: 501 });
 
-  /*
+
+
+}
+
+
+
+/*
+
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.MEDIASERVER_SUPABASE_URL;
+const supabaseAnonKey = process.env.MEDIASERVER_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Supabase environment variables (URL and Anon Key) are not set.");
+  throw new Error("Supabase environment variables are missing.");
+}
+
+// Create a single Supabase client instance
+const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
+
+// --- Database Structure Verification ---
+// ... existing code ...
+// [keeping the existing database check code]
 
 export async function POST(req: NextRequest) {
   await dbCheckPromise;
@@ -123,45 +147,75 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const data = await req.json();
-    const folderPath: string = data?.path?.trim();
-    if (!folderPath) {
-      return new NextResponse(JSON.stringify({ error: "Missing or empty 'path' field" }), { status: 400 });
+    const { path } = await req.json();
+    
+    if (!path || typeof path !== 'string') {
+      return new NextResponse(JSON.stringify({ error: 'Missing or invalid folder path' }), { status: 400 });
     }
 
-    // Extract folder name from path (foo/bar → bar)
-    const segments = folderPath.split("/").filter(Boolean);
-    const folderName = segments[segments.length - 1];
-    if (!folderName) {
-      return new NextResponse(JSON.stringify({ error: "Invalid folder path" }), { status: 400 });
+    // Split path into parts to create folders hierarchically
+    const pathParts = path.split('/').filter(Boolean);
+    
+    if (pathParts.length === 0) {
+      return new NextResponse(JSON.stringify({ error: 'Invalid folder path' }), { status: 400 });
     }
 
-    // Insert into the image_folders table (make sure it exists with 'name' and 'path')
-    const { error: insertError, data: insertData } = await supabase
-      .from('image_folders')
-      .insert([{ name: folderName, path: folderPath }])
-      .select()
-      .single();
-
-    if (insertError) {
-      if (insertError.code === '23505') {
-        // Unique violation (already exists)
-        return new NextResponse(JSON.stringify({ error: "A folder with this path already exists." }), { status: 409 });
+    let parentId = null;
+    let currentPath = '';
+    
+    // Create folders hierarchically, ensuring parents exist
+    for (const folderName of pathParts) {
+      currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+      
+      // Check if this folder segment already exists under the current parent
+      const { data: existingFolders, error: lookupError } = await supabase
+        .from('folders')
+        .select('id, name')
+        .eq('name', folderName)
+        .eq('parent_id', parentId)
+        .maybeSingle();
+        
+      if (lookupError) {
+        console.error("Error checking folder existence:", lookupError);
+        return new NextResponse(JSON.stringify({ error: 'Error checking folder existence' }), { status: 500 });
       }
-      return new NextResponse(JSON.stringify({ error: "Failed to create folder", details: insertError.message }), { status: 500 });
+      
+      if (existingFolders) {
+        // This folder segment already exists, use its ID for next iteration
+        parentId = existingFolders.id;
+        continue;
+      }
+      
+      // Create the folder segment since it doesn't exist
+      const { data: newFolder, error: insertError } = await supabase
+        .from('folders')
+        .insert({
+          name: folderName,
+          parent_id: parentId
+        })
+        .select('id')
+        .single();
+        
+      if (insertError) {
+        console.error("Error creating folder:", insertError);
+        return new NextResponse(JSON.stringify({ error: 'Error creating folder' }), { status: 500 });
+      }
+      
+      // Set this new folder as parent for next iteration
+      parentId = newFolder.id;
     }
 
-    return new NextResponse(JSON.stringify({
-      success: true,
-      folder: insertData,
+    return new NextResponse(JSON.stringify({ 
+      success: true, 
+      message: 'Folder created successfully',
+      path
     }), { status: 201 });
-
+    
   } catch (error) {
-    console.error("POST /api/images/folders: Error processing request:", (error as Error).message);
-    return new NextResponse(JSON.stringify({ error: 'An unexpected error occurred.' }), { status: 500 });
+    console.error("Error creating folder:", error);
+    return new NextResponse(JSON.stringify({ error: 'Server error creating folder' }), { status: 500 });
   }
 }
-  */
 
-
-}
+// GET implementation could be added to list folders
+*/

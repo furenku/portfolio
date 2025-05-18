@@ -114,3 +114,190 @@ export async function POST(req: NextRequest) {
 
 
 }
+
+
+
+/*
+
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.MEDIASERVER_SUPABASE_URL;
+const supabaseAnonKey = process.env.MEDIASERVER_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Supabase environment variables (URL and Anon Key) are not set.");
+  throw new Error("Supabase environment variables are missing.");
+}
+
+// Create a single Supabase client instance
+const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
+
+// --- Database Structure Verification ---
+// ... existing code ...
+// [keeping the existing database check code]
+
+// Helper function to get or create a folder by path
+async function getFolderIdByPath(path: string): Promise<number | null> {
+  if (!path) return null; // Root folder (null parent)
+  
+  const pathParts = path.split('/').filter(Boolean);
+  if (pathParts.length === 0) return null;
+  
+  let parentId: number | null = null;
+  
+  // Navigate through folder hierarchy
+  for (const folderName of pathParts) {
+    // Look for existing folder
+    const { data: existingFolder, error: lookupError } = await supabase
+      .from('folders')
+      .select('id')
+      .eq('name', folderName)
+      .eq('parent_id', parentId)
+      .maybeSingle();
+    
+    if (lookupError) {
+      console.error(`Error looking up folder "${folderName}":`, lookupError);
+      throw new Error('Error looking up folder');
+    }
+    
+    if (existingFolder) {
+      parentId = existingFolder.id;
+      continue;
+    }
+    
+    // Create folder if it doesn't exist
+    const { data: newFolder, error: insertError } = await supabase
+      .from('folders')
+      .insert({
+        name: folderName,
+        parent_id: parentId
+      })
+      .select('id')
+      .single();
+    
+    if (insertError) {
+      console.error(`Error creating folder "${folderName}":`, insertError);
+      throw new Error('Error creating folder');
+    }
+    
+    parentId = newFolder.id;
+  }
+  
+  return parentId;
+}
+
+export async function POST(req: NextRequest) {
+  await dbCheckPromise;
+
+  if (!isDbStructureValid) {
+    console.error("POST /api/images/move: Aborting because database structure is invalid.");
+    return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
+  }
+
+  try {
+    const { imageIds, targetPath } = await req.json();
+    
+    if (!Array.isArray(imageIds) || imageIds.length === 0) {
+      return new NextResponse(JSON.stringify({ error: 'Missing or invalid image IDs' }), { status: 400 });
+    }
+    
+    // 1. Get or create the target folder ID
+    let folderId: number | null;
+    try {
+      folderId = await getFolderIdByPath(targetPath);
+    } catch (error) {
+      console.error("Error resolving folder path:", error);
+      return new NextResponse(JSON.stringify({ error: 'Error resolving folder path' }), { status: 500 });
+    }
+    
+    // 2. Process each image
+    const results = [];
+    for (const imageId of imageIds) {
+      // If target folder is null (root), we need to remove from imageFolders
+      if (folderId === null) {
+        // Remove image from all folders
+        const { error: removeError } = await supabase
+          .from('imageFolders')
+          .delete()
+          .eq('image_id', imageId);
+        
+        if (removeError) {
+          console.error(`Error removing image ${imageId} from folders:`, removeError);
+          results.push({ imageId, success: false, error: 'Failed to remove from folders' });
+          continue;
+        }
+        
+        // Update the path in the images table to reflect no folder
+        const { error: updateError } = await supabase
+          .from('images')
+          .update({ path: '' })
+          .eq('id', imageId);
+        
+        if (updateError) {
+          console.error(`Error updating path for image ${imageId}:`, updateError);
+          results.push({ imageId, success: false, error: 'Failed to update path' });
+          continue;
+        }
+        
+        results.push({ imageId, success: true, path: '' });
+      } else {
+        // Check if the image is already in this folder to avoid duplicates
+        const { data: existing, error: checkError } = await supabase
+          .from('imageFolders')
+          .select('id')
+          .eq('image_id', imageId)
+          .eq('folder_id', folderId)
+          .maybeSingle();
+        
+        if (checkError) {
+          console.error(`Error checking existing folder assignment for image ${imageId}:`, checkError);
+          results.push({ imageId, success: false, error: 'Failed to check existing folder' });
+          continue;
+        }
+        
+        if (!existing) {
+          // Image is not in this folder, add it
+          const { error: insertError } = await supabase
+            .from('imageFolders')
+            .insert({
+              image_id: imageId,
+              folder_id: folderId
+            });
+          
+          if (insertError) {
+            console.error(`Error adding image ${imageId} to folder:`, insertError);
+            results.push({ imageId, success: false, error: 'Failed to add to folder' });
+            continue;
+          }
+        }
+        
+        // Update the path in images table for UI compatibility
+        const { error: updateError } = await supabase
+          .from('images')
+          .update({ path: targetPath })
+          .eq('id', imageId);
+        
+        if (updateError) {
+          console.error(`Error updating path for image ${imageId}:`, updateError);
+          results.push({ imageId, success: false, error: 'Failed to update path' });
+          continue;
+        }
+        
+        results.push({ imageId, success: true, path: targetPath });
+      }
+    }
+    
+    return new NextResponse(JSON.stringify({ 
+      success: true,
+      message: `Moved ${results.filter(r => r.success).length} of ${imageIds.length} images`,
+      results
+    }), { status: 200 });
+    
+  } catch (error) {
+    console.error("Error moving images:", error);
+    return new NextResponse(JSON.stringify({ error: 'Server error moving images' }), { status: 500 });
+  }
+}
+
+*/
