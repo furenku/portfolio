@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { Folder } from '@/types/media-server';
 
 
 
@@ -90,10 +91,7 @@ export async function GET() {
 
 }
 
-
-
 export async function POST(req: NextRequest) {
-
   await dbCheckPromise;
 
   if (!isDbStructureValid) {
@@ -102,120 +100,92 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const data = await req.json();
-    console.log("POST /api/images/folders: Form data parsed successfully.", data);
-    
-  } catch (error) {
-    console.error("POST /api/images/folders: Error parsing form data:", (error as Error).message);
-    return new NextResponse(JSON.stringify({ error: 'Error parsing form data. Please ensure the request is a valid multipart/form-data.' }), { status: 400 });
-  }
-
-  return new NextResponse(JSON.stringify({ error: 'Implementation pending. This endpoint is not yet available.' }), { status: 501 });
-
-
-
-}
-
-
-
-/*
-
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.MEDIASERVER_SUPABASE_URL;
-const supabaseAnonKey = process.env.MEDIASERVER_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Supabase environment variables (URL and Anon Key) are not set.");
-  throw new Error("Supabase environment variables are missing.");
-}
-
-// Create a single Supabase client instance
-const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
-
-// --- Database Structure Verification ---
-// ... existing code ...
-// [keeping the existing database check code]
-
-export async function POST(req: NextRequest) {
-  await dbCheckPromise;
-
-  if (!isDbStructureValid) {
-    console.error("POST /api/images/folders: Aborting because database structure is invalid.");
-    return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
-  }
-
-  try {
     const { path } = await req.json();
-    
+
     if (!path || typeof path !== 'string') {
       return new NextResponse(JSON.stringify({ error: 'Missing or invalid folder path' }), { status: 400 });
     }
 
     // Split path into parts to create folders hierarchically
     const pathParts = path.split('/').filter(Boolean);
-    
+
     if (pathParts.length === 0) {
       return new NextResponse(JSON.stringify({ error: 'Invalid folder path' }), { status: 400 });
     }
 
-    let parentId = null;
+    let parentId: number | null  = null;
     let currentPath = '';
-    
+
     // Create folders hierarchically, ensuring parents exist
     for (const folderName of pathParts) {
       currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+
+      console.log("folderName", folderName);
+      console.log("parentId", parentId);
       
+
       // Check if this folder segment already exists under the current parent
-      const { data: existingFolders, error: lookupError } = await supabase
+      const { data: existingFolder, error: lookupError }:  { 
+        data: Folder | null, 
+        error: Error | null
+      } = await supabase
         .from('folders')
-        .select('id, name')
+        .select('id, name, parent_id')
         .eq('name', folderName)
-        .eq('parent_id', parentId)
+        .limit(1)
         .maybeSingle();
-        
+
       if (lookupError) {
         console.error("Error checking folder existence:", lookupError);
         return new NextResponse(JSON.stringify({ error: 'Error checking folder existence' }), { status: 500 });
       }
-      
-      if (existingFolders) {
+
+      if (existingFolder) {
         // This folder segment already exists, use its ID for next iteration
-        parentId = existingFolders.id;
+        parentId = existingFolder.id;
         continue;
       }
-      
+
+      const body: {
+        name: string,
+        parent_id?: number
+      } = {
+        name: folderName
+      }
+
+      if( parentId ) {
+        body.parent_id = parentId
+      }
+
       // Create the folder segment since it doesn't exist
-      const { data: newFolder, error: insertError } = await supabase
+      const { data: newFolder, error: insertError }: {
+        data: Folder | null,
+        error: Error | null
+      } = await supabase
         .from('folders')
-        .insert({
-          name: folderName,
-          parent_id: parentId
-        })
+        .insert(body)
         .select('id')
+        .limit(1)
         .single();
-        
+
       if (insertError) {
         console.error("Error creating folder:", insertError);
         return new NextResponse(JSON.stringify({ error: 'Error creating folder' }), { status: 500 });
       }
-      
+
       // Set this new folder as parent for next iteration
-      parentId = newFolder.id;
+      parentId = newFolder ? newFolder.id : null;
+
     }
 
-    return new NextResponse(JSON.stringify({ 
-      success: true, 
+    return new NextResponse(JSON.stringify({
+      success: true,
       message: 'Folder created successfully',
       path
     }), { status: 201 });
-    
+
   } catch (error) {
     console.error("Error creating folder:", error);
     return new NextResponse(JSON.stringify({ error: 'Server error creating folder' }), { status: 500 });
   }
 }
-
-// GET implementation could be added to list folders
-*/

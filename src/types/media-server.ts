@@ -23,3 +23,11 @@ export interface ApiImage extends Dimensions {
   created_at: string;
   path?: string;
 };
+
+
+export type Folder = {
+  id: number;
+  name: string;
+  parent_id?: number;
+  created_at?: string;
+};

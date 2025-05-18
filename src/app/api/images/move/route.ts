@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-
-
+import { Folder } from '@/types/media-server';
 
 const supabaseUrl = process.env.MEDIASERVER_SUPABASE_URL;
 const supabaseAnonKey = process.env.MEDIASERVER_SUPABASE_ANON_KEY;
@@ -75,68 +74,6 @@ const dbCheckPromise = (async () => {
   }
 })(); // Execute the check immediately
 
-
-
-
-export async function GET() {
-    await dbCheckPromise;
-    
-    if (!isDbStructureValid) {
-      console.error("GET /api/images/move: Aborting because database structure is invalid.");
-      return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
-    }
-
-    return new NextResponse(JSON.stringify({ error: 'Impementation pending.' }), { status: 500 });
-
-}
-
-
-
-export async function POST(req: NextRequest) {
-
-  await dbCheckPromise;
-
-  if (!isDbStructureValid) {
-      console.error("POST /api/images/move: Aborting because database structure is invalid.");
-      return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
-  }
-
-  try {
-    const data = await req.json();
-    console.log("POST /api/images/move: Form data parsed successfully.", data);
-    
-  } catch (error) {
-    console.error("POST /api/images/move: Error parsing form data:", (error as Error).message);
-    return new NextResponse(JSON.stringify({ error: 'Error parsing form data. Please ensure the request is a valid multipart/form-data.' }), { status: 400 });
-  }
-
-  return new NextResponse(JSON.stringify({ error: 'Implementation pending. This endpoint is not yet available.' }), { status: 501 });
-
-
-}
-
-
-
-/*
-
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.MEDIASERVER_SUPABASE_URL;
-const supabaseAnonKey = process.env.MEDIASERVER_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Supabase environment variables (URL and Anon Key) are not set.");
-  throw new Error("Supabase environment variables are missing.");
-}
-
-// Create a single Supabase client instance
-const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
-
-// --- Database Structure Verification ---
-// ... existing code ...
-// [keeping the existing database check code]
-
 // Helper function to get or create a folder by path
 async function getFolderIdByPath(path: string): Promise<number | null> {
   if (!path) return null; // Root folder (null parent)
@@ -149,7 +86,10 @@ async function getFolderIdByPath(path: string): Promise<number | null> {
   // Navigate through folder hierarchy
   for (const folderName of pathParts) {
     // Look for existing folder
-    const { data: existingFolder, error: lookupError } = await supabase
+    const { data: existingFolder, error: lookupError } : {
+      data: Folder | null,
+      error: Error | null 
+    } = await supabase
       .from('folders')
       .select('id')
       .eq('name', folderName)
@@ -162,7 +102,7 @@ async function getFolderIdByPath(path: string): Promise<number | null> {
     }
     
     if (existingFolder) {
-      parentId = existingFolder.id;
+      parentId = existingFolder ? existingFolder.id : null;
       continue;
     }
     
@@ -185,6 +125,17 @@ async function getFolderIdByPath(path: string): Promise<number | null> {
   }
   
   return parentId;
+}
+
+export async function GET() {
+  await dbCheckPromise;
+
+  if (!isDbStructureValid) {
+      console.error("GET /api/images/move: Aborting because database structure is invalid.");
+    return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
+  }
+
+    return new NextResponse(JSON.stringify({ error: 'Impementation pending.' }), { status: 500 });
 }
 
 export async function POST(req: NextRequest) {
@@ -299,5 +250,3 @@ export async function POST(req: NextRequest) {
     return new NextResponse(JSON.stringify({ error: 'Server error moving images' }), { status: 500 });
   }
 }
-
-*/
