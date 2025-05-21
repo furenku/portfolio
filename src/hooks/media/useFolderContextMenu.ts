@@ -12,12 +12,20 @@ interface FolderContextMenuState {
 export const useFolderContextMenu = () => {
   const [folderContextMenu, setFolderContextMenu] = useState<FolderContextMenuState | null>(null);
 
-  const openFolderContextMenu = useCallback((event: React.MouseEvent, path: string, name: string) => {
+  const openFolderContextMenu = (event: React.MouseEvent, folderPath: string, folderName: string) => {
     event.preventDefault();
-    setFolderContextMenu({ x: event.clientX, y: event.clientY, path, name });
-  }, []);
+    console.log("Opening folder context menu:", { folderPath, folderName });
+    setFolderContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      path: folderPath,
+      name: folderName
+    });
+  };
 
   const closeFolderContextMenu = useCallback(() => {
+    console.log("Closing folder context menu");
+
     setFolderContextMenu(null);
   }, []);
 

@@ -204,3 +204,112 @@ export async function POST(req: NextRequest) {
     return new NextResponse(JSON.stringify({ error: 'Server error creating folder' }), { status: 500 });
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  await dbCheckPromise;
+
+  if (!isDbStructureValid) {
+    console.error("PATCH /api/images/folders: Aborting because database structure is invalid.");
+    return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
+  }
+
+  try {
+    const { folderPath, newName } = await req.json();
+
+    if (!folderPath || !newName || typeof folderPath !== 'string' || typeof newName !== 'string') {
+      return new NextResponse(JSON.stringify({ error: 'Missing or invalid folder path or name' }), { status: 400 });
+    }
+
+    // Get folder name from the path
+    const pathParts = folderPath.split('/').filter(Boolean);
+    const currentFolderName = pathParts[pathParts.length - 1];
+
+    if (!currentFolderName) {
+      return new NextResponse(JSON.stringify({ error: 'Invalid folder path' }), { status: 400 });
+    }
+
+    // Find the folder ID using the path
+    // First, traverse the hierarchy to find the parent ID
+    let parentId: number | null = null;
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      const folderName = pathParts[i];
+
+      const { data: folder, error }: { data: { id: number } | null, error: any } = await supabase
+        .from('folders')
+        .select('id')
+        .eq('name', folderName)
+        .eq('parent_id', parentId)
+        .limit(1)
+        .single();
+
+      if (error) {
+        console.error("Error finding folder hierarchy:", error);
+        return new NextResponse(JSON.stringify({ error: 'Error locating folder' }), { status: 500 });
+      }
+
+      if (!folder) {
+        return new NextResponse(JSON.stringify({ error: 'Folder path not found' }), { status: 404 });
+      }
+
+      parentId = folder.id;
+    }
+
+    // Now find the actual folder to rename
+    const { data: folderToRename, error: findError } = await supabase
+      .from('folders')
+      .select('id')
+      .eq('name', currentFolderName)
+      .eq('parent_id', parentId)
+      .limit(1)
+      .single();
+
+    if (findError) {
+      console.error("Error finding folder to rename:", findError);
+      return new NextResponse(JSON.stringify({ error: 'Error locating folder to rename' }), { status: 500 });
+    }
+
+    if (!folderToRename) {
+      return new NextResponse(JSON.stringify({ error: 'Folder not found' }), { status: 404 });
+    }
+
+    // Check if a folder with the new name already exists in the same parent
+    const { data: existingFolder, error: existingError } = await supabase
+      .from('folders')
+      .select('id')
+      .eq('name', newName)
+      .eq('parent_id', parentId)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error("Error checking existing folder:", existingError);
+      return new NextResponse(JSON.stringify({ error: 'Error checking existing folders' }), { status: 500 });
+    }
+
+    if (existingFolder) {
+      return new NextResponse(JSON.stringify({ error: 'A folder with this name already exists' }), { status: 409 });
+    }
+
+    // Rename the folder
+    const { error: updateError } = await supabase
+      .from('folders')
+      .update({ name: newName })
+      .eq('id', folderToRename.id);
+
+    if (updateError) {
+      console.error("Error renaming folder:", updateError);
+      return new NextResponse(JSON.stringify({ error: 'Error renaming folder' }), { status: 500 });
+    }
+
+    return new NextResponse(JSON.stringify({
+      success: true,
+      message: 'Folder renamed successfully',
+      oldPath: folderPath,
+      newName
+    }), { status: 200 });
+
+  } catch (error) {
+    console.error("Error renaming folder:", error);
+    return new NextResponse(JSON.stringify({ error: 'Server error renaming folder' }), { status: 500 });
+  }
+}

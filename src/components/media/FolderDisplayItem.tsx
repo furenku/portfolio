@@ -38,11 +38,10 @@ export const FolderDisplayItem: React.FC<FolderDisplayItemProps> = ({
     }),
   }), [onDrop, name, path]);
 
-  const handleContextMenu = (e: React.MouseEvent) => {
-    if (selectedItemCount > 0) {
-      e.preventDefault();
-      onContextMenuOpen(e, path, name);
-    }
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    console.log("Context menu triggered for:", { name, path });
+    onContextMenuOpen(event, path, name);
   };
 
   return (

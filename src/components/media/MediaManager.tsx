@@ -14,18 +14,21 @@ import { useFolderNavigation } from '@/hooks/media/useFolderNavigation';
 import { useImageDragState } from '@/hooks/media/useImageDragState';
 import { useFolderContextMenu } from '@/hooks/media/useFolderContextMenu';
 import { ViewMode } from '@/types/mediaGalleryTypes';
+import { RenameFolderModal } from './RenameFolderModal'; // We'll create this component
 
 export const MediaManager = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
-  
+  const [showRenameFolderModal, setShowRenameFolderModal] = useState(false);
+  const [folderToRename, setFolderToRename] = useState<string | null>(null);
   // Custom hooks
-  const { images, loading, error, getCurrentFolder, createFolder, moveImages, refreshFolderStructure } = useMediaData();
+  const { loading, error, getCurrentFolder, createFolder, moveImages, refreshFolderStructure, renameFolder } = useMediaData();
   const { selectedImages, handleImageClick, clearSelectedImages } = useImageSelection();
   const { currentPath, navigateToFolder, navigateUp } = useFolderNavigation();
   const { isImageDragInProgress, handleActualImageDragStart, handleActualImageDragEnd } = useImageDragState();
   const { folderContextMenu, openFolderContextMenu, closeFolderContextMenu } = useFolderContextMenu();
 
+  
   // Add a new handler for folder creation
   const handleCreateFolder = async (folderPath: string) => {
     const success = await createFolder(folderPath);
@@ -35,6 +38,24 @@ export const MediaManager = () => {
       setShowCreateFolderModal(false);
       }
   };
+
+  const handleOpenRenameFolder = (folderPath: string) => {
+    setFolderToRename(folderPath);
+    setShowRenameFolderModal(true);
+    closeFolderContextMenu();
+  };
+
+  const handleRenameFolder = async (newName: string) => {
+    if (folderToRename) {
+      const success = await renameFolder(folderToRename, newName);
+      if (success) {
+        refreshFolderStructure();
+        setShowRenameFolderModal(false);
+        setFolderToRename(null);
+      }
+    }
+  };
+
 
   // Handle moving selected images to a context menu folder
   const handleMoveSelectedToContextFolder = async () => {
@@ -54,17 +75,22 @@ export const MediaManager = () => {
 
   if (loading) return <div className="flex justify-center p-8">Loading images...</div>;
   if (error) return <div className="text-red-500 p-8">{error}</div>;
+  
+
+  console.log("folderContextMenu state:", folderContextMenu);
+  console.log("selectedImages:", selectedImages);
 
   return (
     <DndProvider backend={HTML5Backend}>
-      {/* Folder Context Menu */}
-      {folderContextMenu && selectedImages.size > 0 && (
+      {folderContextMenu && (
         <FolderContextMenu
           x={folderContextMenu.x}
           y={folderContextMenu.y}
           folderName={folderContextMenu.name}
+          folderPath={folderContextMenu.path}
           itemCount={selectedImages.size}
           onMoveSelectedItems={handleMoveSelectedToContextFolder}
+          onRenameFolder={handleOpenRenameFolder}
         />
       )}
 
@@ -103,6 +129,15 @@ export const MediaManager = () => {
           onCreateFolder={handleCreateFolder}
           currentPath={currentPath}
         />
+
+        {showRenameFolderModal && folderToRename && (
+          <RenameFolderModal
+            isOpen={showRenameFolderModal}
+            onClose={() => setShowRenameFolderModal(false)}
+            onRenameFolder={handleRenameFolder}
+            folderPath={folderToRename}
+          />
+        )}
       </div>
     </DndProvider>
   );

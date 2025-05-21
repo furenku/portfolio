@@ -149,6 +149,34 @@ export const useMediaData = () => {
     }
   };
 
+
+  const renameFolder = async (folderPath: string, newName: string) => {
+    try {
+      const response = await fetch('/api/images/folders', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          folderPath, 
+          newName 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error renaming folder:', errorData);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error renaming folder:', error);
+      return false;
+    }
+  };
+
+
   return {
     images,
     folders,
@@ -159,5 +187,6 @@ export const useMediaData = () => {
     createFolder,
     moveImages,
     refreshFolderStructure,
+    renameFolder
   };
 };

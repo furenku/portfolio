@@ -6,17 +6,23 @@ interface FolderContextMenuProps {
   x: number;
   y: number;
   folderName: string;
+  folderPath: string;
   itemCount: number;
   onMoveSelectedItems: () => void;
+  onRenameFolder: (folderPath: string) => void;
 }
 
 export const FolderContextMenu: React.FC<FolderContextMenuProps> = ({
   x,
   y,
   folderName,
+  folderPath,
   itemCount,
   onMoveSelectedItems,
+  onRenameFolder,
 }) => {
+  console.log("Rendering FolderContextMenu:", { x, y, folderName, folderPath, itemCount });
+
   return (
     <div
       style={{ top: y, left: x, position: 'fixed', zIndex: 150 }}
@@ -24,11 +30,20 @@ export const FolderContextMenu: React.FC<FolderContextMenuProps> = ({
       onClick={(e) => e.stopPropagation()}
     >
       <button
-        onClick={onMoveSelectedItems}
+        onClick={() => onRenameFolder(folderPath)}
         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
       >
-        Move {itemCount} item(s) to "{folderName}"
+        Rename "{folderName}"
       </button>
+      
+      {itemCount > 0 && (
+        <button
+          onClick={onMoveSelectedItems}
+          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+        >
+          Move {itemCount} item(s) to "{folderName}"
+        </button>
+      )}
     </div>
   );
 };
