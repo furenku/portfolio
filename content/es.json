@@ -149,6 +149,14 @@
 
 
     "sections": {
+        "projects": {
+            "title": "Proyectos",
+            "description": "Demostraciones funcionales de proyectos que muestran mis habilidades e intereses.",
+            "components": { 
+                "title": "Componentes",
+                "description": "Demostraciones funcionales de componentes de la interfaz de usuario."
+            }
+        },
         "services": {
             "images": {
                 "title": "Images",

@@ -150,6 +150,14 @@
 
 
     "sections": {
+        "projects": {
+            "title": "Projects",
+            "description": "Working demos of projects that showcase my skills and interests.",
+            "components": { 
+                "title": "Components",
+                "description": "Working demos of UI components."
+            }
+        },
         "services": {
             "images": {
                 "title": "Images",
