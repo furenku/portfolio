@@ -255,14 +255,19 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Now find the actual folder to rename
-    const { data: folderToRename, error: findError } = await supabase
+    let query = supabase
       .from('folders')
       .select('id')
-      .eq('name', currentFolderName)
-      .eq('parent_id', parentId)
-      .limit(1)
-      .single();
+      .eq('name', currentFolderName);
 
+    // Only add the parent_id condition if it's not null (for root folder case)
+    if (parentId !== null) {
+      query = query.eq('parent_id', parentId);
+    } else {
+      query = query.is('parent_id', null);
+    }
+
+    const { data: folderToRename, error: findError } = await query.limit(1).single();
     if (findError) {
       console.error("Error finding folder to rename:", findError);
       return new NextResponse(JSON.stringify({ error: 'Error locating folder to rename' }), { status: 500 });
