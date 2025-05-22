@@ -416,7 +416,7 @@
 
     "commander": ["commander@4.1.1", "", {}, "sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA=="],
 
-    "components-react": ["components-react@github:furenku/components-react#d28b39b", { "dependencies": { "husky": "^9.1.7" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "furenku-components-react-d28b39b"],
+    "components-react": ["components-react@github:furenku/components-react#89985c0", { "dependencies": { "husky": "^9.1.7" }, "peerDependencies": { "next": ">=15.1.6", "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "furenku-components-react-89985c0"],
 
     "concat-map": ["concat-map@0.0.1", "", {}, "sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg=="],
 
