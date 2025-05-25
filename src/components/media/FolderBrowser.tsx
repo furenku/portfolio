@@ -9,7 +9,7 @@ interface FolderBrowserProps {
   onFolderClick: (folderName: string) => void;
   onNavigateUp: () => void;
   onDropItemToFolder: (imageIds: string[], targetPath: string) => void;
-  onDropFolderToFolder: (sourceFolderPath: string, targetFolderPath: string) => Promise<boolean>;
+  onDropFolderToFolder: (source: string, targetFolderPath: string) => Promise<boolean>;
   onContextMenuOpen: (event: React.MouseEvent, folderPath: string, folderName: string) => void;
   onFolderDragStart: () => void;
   onFolderDragEnd: () => void;
@@ -58,9 +58,9 @@ export const FolderBrowser: React.FC<FolderBrowserProps> = ({
                   .join('/')
               )
             }
-            onDropFolder={(sourceFolderPath) => 
+            onDropFolder={(source) => 
               onDropFolderToFolder(
-                sourceFolderPath,
+                source,
                 currentPath
                   .split('/')
                   .filter(Boolean)
@@ -87,7 +87,7 @@ export const FolderBrowser: React.FC<FolderBrowserProps> = ({
               isActive={false}
               onClick={() => onFolderClick(folderName)}
               onDrop={(droppedImageIds) => onDropItemToFolder(droppedImageIds, folderPath)}
-              onDropFolder={(sourceFolderPath) => onDropFolderToFolder(sourceFolderPath, folderPath)}
+              onDropFolder={(source) => onDropFolderToFolder(source, folderPath)}
               onContextMenuOpen={onContextMenuOpen}
               onFolderDragStart={onFolderDragStart}
               onFolderDragEnd={onFolderDragEnd}

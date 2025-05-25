@@ -23,13 +23,14 @@ export const MediaManager = () => {
   const [showRenameFolderModal, setShowRenameFolderModal] = useState(false);
   const [folderToRename, setFolderToRename] = useState<string | null>(null);
   // Custom hooks
-  const { loading, error, getCurrentFolder, createFolder, moveImages, renameFolder, moveFolder } = useMediaData();
+  const { loading, error, getCurrentFolder, createFolder, moveImages, renameFolder, moveFolder, deleteFolder } = useMediaData();
 
   const { selectedImages, handleImageClick, clearSelectedImages } = useImageSelection();
   const { currentPath, navigateToFolder, navigateUp } = useFolderNavigation();
   const { isImageDragInProgress, handleActualImageDragStart, handleActualImageDragEnd } = useImageDragState();
   const { folderContextMenu, openFolderContextMenu, closeFolderContextMenu } = useFolderContextMenu();
   const { isFolderDragInProgress, handleFolderDragStart, handleFolderDragEnd } = useFolderDragState();
+
 
   
   // Add a new handler for folder creation
@@ -69,20 +70,37 @@ export const MediaManager = () => {
     }
   };
 
-  const handleMoveFolderToTarget = async (sourceFolderPath: string, targetFolderPath: string) => {
-    const success = await moveFolder(sourceFolderPath, targetFolderPath);
+  const handleMoveFolderToTarget = async (source: string, target: string) => {
+    const success = await moveFolder(source, target);
     if (success) {
       // If we're currently inside the moved folder, update navigation
-      if (currentPath.startsWith(sourceFolderPath)) {
-        const remainingPath = currentPath.slice(sourceFolderPath.length);
-        const newPath = targetFolderPath ? `${targetFolderPath}/${sourceFolderPath.split('/').pop()}${remainingPath}` : `${sourceFolderPath.split('/').pop()}${remainingPath}`;
+      if (currentPath.startsWith(source)) {
+        const remainingPath = currentPath.slice(source.length);
+        const newPath = target ? `${target}/${source.split('/').pop()}${remainingPath}` : `${source.split('/').pop()}${remainingPath}`;
         navigateToFolder(newPath);
       }
     }
     return success;
   };
 
+  const handleDeleteFolder = async (folderPath: string) => {
+    // Show confirmation dialog
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete the folder "${folderPath.split('/').pop()}"? This action cannot be undone and will delete all contents including subfolders and images.`
+    );
+    
+    if (!confirmDelete) return;
 
+    const success = await deleteFolder(folderPath);
+    if (success) {
+      // If we're currently inside the deleted folder or its subfolders, navigate up
+      if (currentPath.startsWith(folderPath)) {
+        const parentPath = folderPath.split('/').slice(0, -1).join('/');
+        navigateToFolder(parentPath);
+      }
+      closeFolderContextMenu();
+    }
+  };
 
 
   // Handle moving selected images to a context menu folder
@@ -101,8 +119,8 @@ export const MediaManager = () => {
   const currentFolderImages = currentFolderData.images;
   const subFoldersInCurrentPath = Object.keys(currentFolderData.subFolders);
 
-  if (loading) return <div className="flex justify-center p-8">Loading images...</div>;
-  if (error) return <div className="text-red-500 p-8">{error}</div>;
+  if (loading) return <div className="flex justify-center p-8">Loading...</div>;
+  // if (error) return <div className="text-red-500 p-8">{error}</div>;
   
 
   console.log("folderContextMenu state:", folderContextMenu);
@@ -119,6 +137,7 @@ export const MediaManager = () => {
           itemCount={selectedImages.size}
           onMoveSelectedItems={handleMoveSelectedToContextFolder}
           onRenameFolder={handleOpenRenameFolder}
+          onDeleteFolder={handleDeleteFolder}
         />
       )}
 

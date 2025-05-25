@@ -8,7 +8,7 @@ interface FolderDisplayItemProps {
   isActive: boolean;
   onClick: () => void;
   onDrop: (droppedImageIds: string[]) => void;
-  onDropFolder: (sourceFolderPath: string) => Promise<boolean>;
+  onDropFolder: (source: string, target: string) => Promise<boolean>;
   onContextMenuOpen: (event: React.MouseEvent, folderPath: string, folderName: string) => void;
   onFolderDragStart: () => void;
   onFolderDragEnd: () => void;
@@ -37,11 +37,7 @@ interface FolderDragCollectedProps {
   isDragging: boolean;
 }
 
-interface FolderDropCollectedProps {
-  isOverFolder: boolean;
-  canDropFolder: boolean;
 
-}
 
 export const FolderDisplayItem: React.FC<FolderDisplayItemProps> = ({
   name,
@@ -57,99 +53,89 @@ export const FolderDisplayItem: React.FC<FolderDisplayItemProps> = ({
   isGloballyDragging,
   isDraggable,
 }) => {
-  // Existing image drag/drop logic
+  // Add debug logging
+  // console.log("FolderDisplayItem render:", { name, isGloballyDragging, isDraggable });
   const [{ isOver, canDrop }, drop] = useDrop<DragItem, void, ImageCollectedProps>({
-    accept: 'IMAGE',
+    accept: ['IMAGE', 'FOLDER' ],
     drop: (item) => {
-      console.log("Dropped item:", item);
-      if (item.imageIds) {
-        
-        onDrop(item.imageIds);
+      switch (item.type) {
+        case 'IMAGE':
+          console.log("🖼️ IMAGE DROP:", { item, folderPath: path });
+
+          if ( item.imageIds) {
+            onDrop(item.imageIds);
+          }
+          break;
+          case 'FOLDER':
+          console.log("🖼️ FOLDER DROP:", { item, path });
+          onDropFolder((item as FolderDragItem).path, path);
+          break;
       }
     },
-    collect: (monitor) => ({
+    collect: (monitor) => {
+      const result = {
       isOver: monitor.isOver(),
       canDrop: monitor.canDrop(),
-    }),
+  };
+      // console.log("📥 Image drop collect:", result, "for folder:", name);
+      return result;
+    },
   });
 
-  const [, drag] = useDrag({
-    type: 'FOLDER_TARGET',
-    item: { folderPath: path, selectedItemCount },
-    collect: () => ({}),
-  }, [onDrop, name, path]);
 
-  // Folder drag/drop logic with proper typing and callbacks
-  const [{ isDragging }, folderDrag] = useDrag<FolderDragItem, void, FolderDragCollectedProps>({
+  const [{ isDragging }, drag] = useDrag<FolderDragItem, void, FolderDragCollectedProps>({
     type: 'FOLDER',
     item: { type: 'FOLDER', path },
     canDrag: isDraggable,
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  }, [path, isDraggable]);
-
-  // Use useEffect to handle drag start/end events
-  const wasJustDragging = useRef(false);
-  useEffect(() => {
-
-    console.log("Folder drag state changed:", isDragging);
-    console.log(wasJustDragging);
-    
-
-    if (isDragging) {
-      onFolderDragStart();
-    } else {
-      // Only call onFolderDragEnd if we were previously dragging
-      // This prevents calling it on initial render
-      if (wasJustDragging.current) {
-      onFolderDragEnd();
-      }
-    }
-    wasJustDragging.current = isDragging;
-  }, [isDragging, onFolderDragStart, onFolderDragEnd]);
-
-
-  const [{ isOverFolder, canDropFolder }, folderDrop] = useDrop<FolderDragItem, void, FolderDropCollectedProps>({
-    accept: 'FOLDER',
-    drop: (item) => {
-      console.log("item", item);
-      
-
-      if (item.type === 'FOLDER' && item.path !== path) {
-        // Fire and forget the async operation
-        handleFolderDrop(item.path);
-      }
+    collect: (monitor) => {
+      const result = { isDragging: monitor.isDragging() };
+      if(monitor.isDragging()) console.log("📁 Folder drag collect:", result, "for folder:", name);
+      return result;
     },
-    collect: (monitor) => ({
-      isOverFolder: monitor.isOver() && monitor.canDrop(),
-      canDropFolder: monitor.canDrop(),
-    }),
   });
 
+  // const wasJustDragging = useRef(false);
+  // Use useEffect to handle drag start/end events
+  // useEffect(() => {
+  //   if(isDragging) console.log("🇧🇩Folder dragging", isDragging);
+
+  //   if (isDragging) {
+  //     onFolderDragStart();
+  //   } else {
+  //     // Only call onFolderDragEnd if we were previously dragging
+  //     // This prevents calling it on initial render
+  //     if (wasJustDragging.current) {
+  //     onFolderDragEnd();
+  //     }
+  //   }
+  //   wasJustDragging.current = isDragging;
+  // }, [isDragging, onFolderDragStart, onFolderDragEnd]);
+
+  
+
   // Helper function to handle the async drop operation
-  const handleFolderDrop = async (sourcePath: string) => {
-    try {
-      const success = await onDropFolder(sourcePath);
-      if (!success) {
-        console.warn('Folder drop operation was not successful');
-        // Handle unsuccessful drop (show notification, etc.)
-      }
-    } catch (error) {
-      console.error('Error dropping folder:', error);
-      // Handle error (show error notification, etc.)
-    }
-  };
+  // const handleFolderDrop = async (sourcePath: string) => {
+  //   try {
+  //     const success = await onDropFolder(sourcePath);
+  //     if (!success) {
+  //       console.warn('Folder drop operation was not successful');
+  //       // Handle unsuccessful drop (show notification, etc.)
+  //     }
+  //   } catch (error) {
+  //     console.error('Error dropping folder:', error);
+  //     // Handle error (show error notification, etc.)
+  //   }
+  // };
 
   // Combine refs for both image and folder drag/drop
   const combinedRef = useCallback((node: HTMLDivElement | null) => {
     drag(node);
     drop(node);
-    folderDrag(node);
-    folderDrop(node);
-  }, [drag, drop, folderDrag, folderDrop]);
+  }, [drag, drop]);
 
   const handleClick = (e: React.MouseEvent) => {
+    console.log("Folder clicked", e);
+    
     e.preventDefault();
     onClick();
   };
@@ -164,13 +150,10 @@ export const FolderDisplayItem: React.FC<FolderDisplayItemProps> = ({
       ref={combinedRef}
       className={`
         flex items-center p-2 my-1 rounded-md cursor-pointer transition
--        ${isActive ? 'bg-blue-100' : 'hover:bg-gray-100'}
--        ${isOver && canDrop ? 'bg-blue-200 ring-2 ring-blue-500' : ''}
--        border border-dashed ${isOver && canDrop ? 'border-blue-500' : 'border-transparent'}
         group cursor-pointer border-2 border-dashed rounded-lg p-4 text-center transition-all
         ${isActive ? 'bg-blue-100 border-blue-300' : ''}
         ${isOver ? 'border-green-400 bg-green-50' : 'border-gray-300'}
-        ${isOverFolder ? 'border-purple-400 bg-purple-50' : ''}
+        ${isOver && ! canDrop ? 'border-purple-400 bg-purple-50' : ''}
         ${isDragging ? 'opacity-100' : ''}
         ${isDragging && isOver && canDrop ? 'hover:border-gray-400 opacity-100' : ''}
         ${isGloballyDragging && !isDragging ? 'opacity-50' : ''}
@@ -183,6 +166,8 @@ export const FolderDisplayItem: React.FC<FolderDisplayItemProps> = ({
       <p className="text-sm font-medium truncate">{name}</p>
       {selectedItemCount > 0 && (
         <p className="text-xs text-gray-500 mt-1">
+          {canDrop ? 'Release to drop' : 'Drag a box here'}
+
           Drop {selectedItemCount} item{selectedItemCount !== 1 ? 's' : ''} here
         </p>
       )}

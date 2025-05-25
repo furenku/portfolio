@@ -180,7 +180,10 @@ export const useMediaData = () => {
     }
   };
 
-  const moveFolder = async (sourceFolderPath: string, targetFolderPath: string): Promise<boolean> => {
+  const moveFolder = async (source: string, target: string): Promise<boolean> => {
+    
+    console.log('Moving folder:', source, 'to', target);
+    
     try {
       const response = await fetch('/api/images/folders', {
         method: 'PUT',
@@ -188,8 +191,8 @@ export const useMediaData = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          sourceFolderPath, 
-          targetFolderPath 
+          source, 
+          target 
         }),
       });
 
@@ -225,7 +228,35 @@ export const useMediaData = () => {
     }
   };
 
-  
+
+  const deleteFolder = async (folderPath: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/images/folders', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ folderPath }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setError(result.error || 'Failed to delete folder');
+        return false;
+      }
+
+      // Reload data to reflect the deletion
+      await loadData();
+      return true;
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      setError('Network error while deleting folder');
+      return false;
+    }
+  };
+
+
 
   const moveImages = async (imageIds: string[], targetPath: string) => {
     if (imageIds.length === 0) return;
@@ -264,6 +295,7 @@ export const useMediaData = () => {
     createFolder,
     renameFolder,
     moveFolder,
+    deleteFolder,
     refreshFolderStructure,
     moveImages,
   };
