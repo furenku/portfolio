@@ -76,35 +76,33 @@ async function deleteRecursively(folderId: number): Promise<number> {
   }
 
   // Delete all images in this folder
-  const { data: images, error: imagesError } = await supabase
+  const { data: imageFolders, error: imageFoldersError } = await supabase
     .from('imageFolders')
     .select('image_id')
-    .eq('folder_id', folderId);
+    .eq('folder_id', folderId)
 
-  if (imagesError) {
-    throw new Error('Error fetching images in folder');
+  if (imageFoldersError) {
+    throw new Error('Error fetching imageFolders in folder');
   }
 
   const { data: otherFolders, error: otherFoldersError } = await supabase
     .from('imageFolders')
     .select('image_id')
     .neq( 'folder_id', folderId)
-    .in( 'image_id', images.map((imageFolder) => imageFolder.image_id) )
+    .in( 'image_id', imageFolders.map((imageFolder) => imageFolder.image_id) )
 
   if (otherFoldersError) {
     throw new Error('Error fetching imageFolders from folder');
   }
 
-  console.log("Other folders", otherFolders);
 
   if( ! Array.isArray(otherFolders) || otherFolders.length === 0) {
 
-    console.log("Deleting images", images.map((image) => image.image_id).join(', '));
-
+    
     const { error: deleteError } = await supabase
     .from('images')
     .delete()
-    .in('id', images.map((image) => image.image_id))
+    .in('id', imageFolders.map((imageFolder) => imageFolder.image_id))
 
 
     if (deleteError) {
