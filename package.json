@@ -19,7 +19,7 @@
     "@types/three": "^0.173.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "components-react": "https://github.com/furenku/components-react",
+    "components-react": "https://github.com/furenku/components-react.git",
     "file-type": "^20.4.1",
     "framer-motion": "^12.3.1",
     "jsonwebtoken": "^9.0.2",
