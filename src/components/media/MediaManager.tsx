@@ -32,6 +32,11 @@ export const MediaManager = () => {
   const { isFolderDragInProgress, handleFolderDragStart, handleFolderDragEnd } = useFolderDragState();
 
 
+  const currentFolderData = getCurrentFolder(currentPath);
+  const currentFolderImages = currentFolderData.images;
+  const subFoldersInCurrentPath = Object.keys(currentFolderData.subFolders);
+
+
   
   // Add a new handler for folder creation
   const handleCreateFolder = async (folderPath: string) => {
@@ -115,17 +120,9 @@ export const MediaManager = () => {
     }
   };
 
-  const currentFolderData = getCurrentFolder(currentPath);
-  const currentFolderImages = currentFolderData.images;
-  const subFoldersInCurrentPath = Object.keys(currentFolderData.subFolders);
 
   if (loading) return <div className="flex justify-center p-8">Loading...</div>;
-  // if (error) return <div className="text-red-500 p-8">{error}</div>;
   
-
-  console.log("folderContextMenu state:", folderContextMenu);
-  console.log("selectedImages:", selectedImages);
-
   return (
     <DndProvider backend={HTML5Backend}>
       {folderContextMenu && (
@@ -149,6 +146,9 @@ export const MediaManager = () => {
           onSetViewMode={setViewMode}
           onShowCreateFolderModal={() => setShowCreateFolderModal(true)}
         />
+        
+        { error && <div className="text-red-500 p-8">{error}</div> }
+
 
         <FolderBrowser
           subFolders={subFoldersInCurrentPath}

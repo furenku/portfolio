@@ -21,13 +21,26 @@ export interface ApiImage extends Dimensions {
   preview: string;
   filename: string;
   created_at: string;
-  path?: string;
+  folder_id: number | null;
 };
 
 
-export type Folder = {
+export interface Image {
+  id: number;
+  filename: string;
+  src: string;
+  sizes: Record<string, any>;
+  created_at: string;
+  alt_text?: string;
+  caption?: string;
+  folder_id?: number;
+  path?: string;
+}
+
+export interface Folder {
   id: number;
   name: string;
-  parent_id?: number;
+  parent_id: number | null;
   created_at?: string;
-};
+  updated_at?: string;
+}
