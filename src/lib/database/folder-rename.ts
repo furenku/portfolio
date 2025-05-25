@@ -2,7 +2,7 @@ import { supabase } from './supabase-client';
 
 export async function renameFolder(folderPath: string, newName: string): Promise<void> {
   const pathParts = folderPath.split('/').filter(Boolean);
-  const currentFolderName = pathParts[pathParts.length - 1];
+  const currentFolderName = pathParts.pop()
 
   if (!currentFolderName) {
     throw new Error('Invalid folder path');
@@ -10,15 +10,17 @@ export async function renameFolder(folderPath: string, newName: string): Promise
 
   // Find parent folder
   let parentId: number | null = null;
-  for (let i = 0; i < pathParts.length - 1; i++) {
+  for (let i = 0; i < pathParts.length; i++) {
     const folderName = pathParts[i];
-
-    const q =supabase
+    const q = supabase
       .from('folders')
       .select('id')
       .eq('name', folderName)
-      .eq('parent_id', parentId)
       .limit(1);
+    
+    if (parentId !== null) {      
+      q.eq('parent_id', parentId)
+    }
 
     const { data: folder, error } = await q.single()
 
@@ -30,45 +32,32 @@ export async function renameFolder(folderPath: string, newName: string): Promise
   }
 
   // Find folder to rename
-  let query = supabase
+  let q = supabase
     .from('folders')
     .select('id')
     .eq('name', currentFolderName);
 
   if (parentId !== null) {
-    query = query.eq('parent_id', parentId);
+    q = q.eq('parent_id', parentId);
   } else {
-    query = query.is('parent_id', null);
+    q = q.is('parent_id', null);
   }
 
-  const { data: folderToRename, error: findError } = await query.limit(1).single();
+  const { data: folderToRename, error: folderError } = await q.single();
+
   
-  if (findError || !folderToRename) {
-    throw new Error('Folder not found');
+  if (folderError || !folderToRename) {
+    throw new Error('Folder to rename not found');
   }
 
-  // Check if new name already exists
-  const { data: existingFolder, error: existingError } = await supabase
-    .from('folders')
-    .select('id')
-    .eq('name', newName)
-    .eq('parent_id', parentId)
-    .limit(1)
-    .maybeSingle();
-
-  if (existingError) {
-    throw new Error('Error checking existing folders');
-  }
-
-  if (existingFolder) {
-    throw new Error('A folder with this name already exists');
-  }
-
-  // Rename the folder
-  const { error: updateError } = await supabase
+  const q2 = supabase
     .from('folders')
     .update({ name: newName })
     .eq('id', folderToRename.id);
+
+  const { error: updateError } = await q2;
+
+  // Rename the folder
 
   if (updateError) {
     throw new Error('Error renaming folder');
