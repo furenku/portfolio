@@ -7,10 +7,16 @@ export const getImagesFromDb = async (): Promise<ApiImage[]> => {
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) {
+
+  const { data: imageFolders, error: imageFoldersError } = await supabase
+    .from('imageFolders')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if ( !imageFolders || error || imageFoldersError) {
     console.error('Supabase GET error:', error);
     throw error;
-  }
+  }  
 
   const formattedImages: ApiImage[] = imagesData?.map(img => ({
     id: img.id,
@@ -23,7 +29,7 @@ export const getImagesFromDb = async (): Promise<ApiImage[]> => {
     created_at: img.created_at,
     width: img.width,
     height: img.height,
-    path: img.path,
+    folder_id: imageFolders.find(imgFolder => imgFolder.image_id === img.id)?.folder_id || null,
   })) || [];
 
   return formattedImages;

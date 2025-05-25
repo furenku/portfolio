@@ -95,16 +95,11 @@ export const MediaManager = () => {
     );
     
     if (!confirmDelete) return;
+    
+    closeFolderContextMenu();
 
-    const success = await deleteFolder(folderPath);
-    if (success) {
-      // If we're currently inside the deleted folder or its subfolders, navigate up
-      if (currentPath.startsWith(folderPath)) {
-        const parentPath = folderPath.split('/').slice(0, -1).join('/');
-        navigateToFolder(parentPath);
-      }
-      closeFolderContextMenu();
-    }
+    await deleteFolder(folderPath);
+    
   };
 
 

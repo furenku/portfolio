@@ -21,7 +21,7 @@ export interface ApiImage extends Dimensions {
   preview: string;
   filename: string;
   created_at: string;
-  folder_id: number | null;
+  folder_id?: number | null;
 };
 
 

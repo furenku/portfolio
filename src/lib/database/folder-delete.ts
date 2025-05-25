@@ -74,7 +74,7 @@ async function deleteRecursively(folderId: number): Promise<number> {
 
   // Delete all images in this folder
   const { error: imagesDeleteError } = await supabase
-    .from('images')
+    .from('imageFolders')
     .delete()
     .eq('folder_id', folderId);
 
