@@ -87,7 +87,7 @@ export async function GET() {
   }
 
   try {
-    // Fetch all folders with their parent relationships
+
     const { data: folders, error } = await supabase
       .from('folders')
       .select('id, name, parent_id')
@@ -228,8 +228,7 @@ export async function PATCH(req: NextRequest) {
       return new NextResponse(JSON.stringify({ error: 'Invalid folder path' }), { status: 400 });
     }
 
-    // Find the folder ID using the path
-    // First, traverse the hierarchy to find the parent ID
+    
     let parentId: number | null = null;
     for (let i = 0; i < pathParts.length - 1; i++) {
       const folderName = pathParts[i];
@@ -282,9 +281,9 @@ export async function PATCH(req: NextRequest) {
       .from('folders')
       .select('id')
       .eq('name', newName)
-      .eq('parent_id', parentId)
       .limit(1)
       .maybeSingle();
+
 
     if (existingError) {
       console.error("Error checking existing folder:", existingError);
@@ -318,3 +317,159 @@ export async function PATCH(req: NextRequest) {
     return new NextResponse(JSON.stringify({ error: 'Server error renaming folder' }), { status: 500 });
   }
 }
+
+
+
+export async function PUT(req: NextRequest) {
+  await dbCheckPromise;
+
+  if (!isDbStructureValid) {
+    console.error("PUT /api/images/folders: Aborting because database structure is invalid.");
+    return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
+  }
+
+  try {
+    const { sourceFolderPath, targetFolderPath } = await req.json();
+
+    if (!sourceFolderPath || typeof sourceFolderPath !== 'string') {
+      return new NextResponse(JSON.stringify({ error: 'Missing or invalid source folder path' }), { status: 400 });
+    }
+
+    if (targetFolderPath !== null && typeof targetFolderPath !== 'string') {
+      return new NextResponse(JSON.stringify({ error: 'Invalid target folder path' }), { status: 400 });
+    }
+
+    // Prevent moving a folder into itself or its descendants
+    if (targetFolderPath && targetFolderPath.startsWith(sourceFolderPath)) {
+      return new NextResponse(JSON.stringify({ error: 'Cannot move folder into itself or its descendants' }), { status: 400 });
+    }
+
+    // Get the source folder
+    const sourceFolderName = sourceFolderPath.split('/').filter(Boolean).pop();
+    if (!sourceFolderName) {
+      return new NextResponse(JSON.stringify({ error: 'Invalid source folder path' }), { status: 400 });
+    }
+
+    // Find source folder in database
+    let sourceParentId: number | null = null;
+    const sourcePathParts = sourceFolderPath.split('/').filter(Boolean);
+    
+    for (let i = 0; i < sourcePathParts.length - 1; i++) {
+      const { data: folder, error } = await supabase
+        .from('folders')
+        .select('id')
+        .eq('name', sourcePathParts[i])
+        .eq('parent_id', sourceParentId)
+        .limit(1)
+        .single();
+
+      if (error || !folder) {
+        return new NextResponse(JSON.stringify({ error: 'Source folder path not found' }), { status: 404 });
+      }
+      sourceParentId = folder.id;
+    }
+
+    const { data: sourceFolder, error: sourceFindError } = await supabase
+      .from('folders')
+      .select('id, name')
+      .eq('name', sourceFolderName)
+      .eq('parent_id', sourceParentId)
+      .limit(1)
+      .single();
+
+    if (sourceFindError || !sourceFolder) {
+      return new NextResponse(JSON.stringify({ error: 'Source folder not found' }), { status: 404 });
+    }
+
+    // Find target folder ID (null for root)
+    let targetFolderId: number | null = null;
+    if (targetFolderPath) {
+      const targetPathParts = targetFolderPath.split('/').filter(Boolean);
+      
+      for (const folderName of targetPathParts) {
+        const { data: folder, error } = await supabase
+          .from('folders')
+          .select('id')
+          .eq('name', folderName)
+          .eq('parent_id', targetFolderId)
+          .limit(1)
+          .single();
+
+        if (error || !folder) {
+          return new NextResponse(JSON.stringify({ error: 'Target folder path not found' }), { status: 404 });
+        }
+        targetFolderId = folder.id;
+      }
+    }
+
+    // Check if a folder with the same name already exists in the target location
+    const { data: existingFolder, error: existingError } = await supabase
+      .from('folders')
+      .select('id')
+      .eq('name', sourceFolderName)
+      .eq('parent_id', targetFolderId)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error("Error checking existing folder:", existingError);
+      return new NextResponse(JSON.stringify({ error: 'Error checking target location' }), { status: 500 });
+    }
+
+    if (existingFolder) {
+      return new NextResponse(JSON.stringify({ error: 'A folder with this name already exists in the target location' }), { status: 409 });
+    }
+
+    // Update the folder's parent_id
+    const { error: updateError } = await supabase
+      .from('folders')
+      .update({ parent_id: targetFolderId })
+      .eq('id', sourceFolder.id);
+
+    if (updateError) {
+      console.error("Error moving folder:", updateError);
+      return new NextResponse(JSON.stringify({ error: 'Error moving folder' }), { status: 500 });
+    }
+
+    // Update image paths for all images in the moved folder and its subfolders
+    const newTargetPath = targetFolderPath ? `${targetFolderPath}/${sourceFolderName}` : sourceFolderName;
+    
+    const { error: imageUpdateError } = await supabase
+      .from('images')
+      .update({ 
+        path: newTargetPath
+      })
+      .eq('path', sourceFolderPath);
+
+    // Update paths for images in subfolders
+    const { error: subfolderImageUpdateError } = await supabase
+      .from('images')
+      .update({ 
+        path: supabase.rpc('replace_path_prefix', {
+          old_prefix: sourceFolderPath + '/',
+          new_prefix: newTargetPath + '/',
+          current_path: 'path'
+        })
+      })
+      .like('path', `${sourceFolderPath}/%`);
+
+    if (imageUpdateError || subfolderImageUpdateError) {
+      console.error("Error updating image paths:", imageUpdateError || subfolderImageUpdateError);
+      // Note: In a production environment, you might want to implement a transaction here
+      // to rollback the folder move if image path updates fail
+    }
+
+    return new NextResponse(JSON.stringify({
+      success: true,
+      message: 'Folder moved successfully',
+      sourcePath: sourceFolderPath,
+      targetPath: targetFolderPath,
+      newPath: newTargetPath
+    }), { status: 200 });
+
+  } catch (error) {
+    console.error("Error moving folder:", error);
+    return new NextResponse(JSON.stringify({ error: 'Server error moving folder' }), { status: 500 });
+  }
+}
+

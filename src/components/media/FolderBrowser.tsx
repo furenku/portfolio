@@ -9,8 +9,12 @@ interface FolderBrowserProps {
   onFolderClick: (folderName: string) => void;
   onNavigateUp: () => void;
   onDropItemToFolder: (imageIds: string[], targetPath: string) => void;
+  onDropFolderToFolder: (sourceFolderPath: string, targetFolderPath: string) => Promise<boolean>;
   onContextMenuOpen: (event: React.MouseEvent, folderPath: string, folderName: string) => void;
+  onFolderDragStart: () => void;
+  onFolderDragEnd: () => void;
   selectedItemCount: number;
+  isGloballyDragging: boolean;
 }
 
 export const FolderBrowser: React.FC<FolderBrowserProps> = ({
@@ -19,8 +23,12 @@ export const FolderBrowser: React.FC<FolderBrowserProps> = ({
   onFolderClick,
   onNavigateUp,
   onDropItemToFolder,
+  onDropFolderToFolder,
   onContextMenuOpen,
+  onFolderDragStart,
+  onFolderDragEnd,
   selectedItemCount,
+  isGloballyDragging,
 }) => {
   return (
     <div className="mb-6">
@@ -50,8 +58,22 @@ export const FolderBrowser: React.FC<FolderBrowserProps> = ({
                   .join('/')
               )
             }
+            onDropFolder={(sourceFolderPath) => 
+              onDropFolderToFolder(
+                sourceFolderPath,
+                currentPath
+                  .split('/')
+                  .filter(Boolean)
+                  .slice(0, -1)
+                  .join('/')
+              )
+            }
             onContextMenuOpen={onContextMenuOpen}
+            onFolderDragStart={onFolderDragStart}
+            onFolderDragEnd={onFolderDragEnd}
             selectedItemCount={selectedItemCount}
+            isGloballyDragging={isGloballyDragging}
+            isDraggable={false} // Parent folder shouldn't be draggable
           />
         )}
         {/* Root or subfolders */}
@@ -65,8 +87,13 @@ export const FolderBrowser: React.FC<FolderBrowserProps> = ({
               isActive={false}
               onClick={() => onFolderClick(folderName)}
               onDrop={(droppedImageIds) => onDropItemToFolder(droppedImageIds, folderPath)}
+              onDropFolder={(sourceFolderPath) => onDropFolderToFolder(sourceFolderPath, folderPath)}
               onContextMenuOpen={onContextMenuOpen}
+              onFolderDragStart={onFolderDragStart}
+              onFolderDragEnd={onFolderDragEnd}
               selectedItemCount={selectedItemCount}
+              isGloballyDragging={isGloballyDragging}
+              isDraggable={true} // Regular folders are draggable
             />
           );
         })}

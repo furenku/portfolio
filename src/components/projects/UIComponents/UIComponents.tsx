@@ -9,7 +9,6 @@ import images from "../../../../data/test/images/images.json"
 type ComponentKey = 'ImageContainer' | 'Gallery' // | 'Video'// | 'VideoRotator' | 'ImageContainer';
 
 
-// Helper function to fetch image as base64
 const fetchImageAsBase64 = async (url: string): Promise<string> => {
     const res = await fetch(url)
     const blob = await res.blob()
@@ -50,7 +49,7 @@ const ImageContainerDemo = () => {
 
 const components: Record<ComponentKey, () => ReactElement> = {
     ImageContainer: () => <ImageContainerDemo />,
-    Gallery: () => <Gallery images={images}/>
+    Gallery: () => <Gallery images={images as ApiImage[]}/>,
     
     // VideoRotator: () => <VideoRotator />,
     // ImageContainer: () => <ImageContainer />
@@ -75,6 +74,7 @@ export const UIComponents = () => {
                     </option>
                 ))}
             </select>
+            
             <div className="component-wrapper w-80 h-80">
                 <CurrentComponent />
             </div>

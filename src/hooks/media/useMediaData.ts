@@ -103,6 +103,7 @@ export const useMediaData = () => {
   }, [folderStructure]);
 
 
+
   const createFolder = async (folderPath: string): Promise<boolean> => {
     try {
       const response = await fetch('/api/images/folders', {
@@ -111,20 +112,120 @@ export const useMediaData = () => {
         body: JSON.stringify({ path: folderPath }),
       });
       if (!response.ok) throw new Error('Failed to create folder');
-      const newFolderData = await response.json();
       
-      // Update folders state with the new folder
-      const updatedFolders = [...folders, newFolderData];
-      setFolders(updatedFolders);
-
-      // Important: Use the updated folders array, not the stale one from closure
-      organizeImagesIntoFolders(images, updatedFolders);
+      // Refetch all data to ensure consistency
+      const [imagesResponse, foldersResponse] = await Promise.all([
+        fetch('/api/images'),
+        fetch('/api/images/folders')
+      ]);
+      
+      if (!imagesResponse.ok || !foldersResponse.ok) {
+        throw new Error('Failed to refresh data');
+      }
+      
+      const imagesData: ApiImage[] = await imagesResponse.json();
+      const foldersData: Folder[] = await foldersResponse.json();
+      
+      setImages(imagesData);
+      setFolders(foldersData);
+      organizeImagesIntoFolders(imagesData, foldersData);
+      
       return true;
     } catch (err) {
       setError((err as Error).message);
       return false;
     }
   };
+
+  const renameFolder = async (folderPath: string, newName: string) => {
+    try {
+      const response = await fetch('/api/images/folders', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          folderPath, 
+          newName 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error renaming folder:', errorData);
+        return false;
+      }
+
+      // Refetch all data after successful rename
+      const [imagesResponse, foldersResponse] = await Promise.all([
+        fetch('/api/images'),
+        fetch('/api/images/folders')
+      ]);
+      
+      if (!imagesResponse.ok || !foldersResponse.ok) {
+        throw new Error('Failed to refresh data');
+      }
+      
+      const imagesData: ApiImage[] = await imagesResponse.json();
+      const foldersData: Folder[] = await foldersResponse.json();
+      
+      setImages(imagesData);
+      setFolders(foldersData);
+      organizeImagesIntoFolders(imagesData, foldersData);
+
+      return true;
+    } catch (error) {
+      console.error('Error renaming folder:', error);
+      return false;
+    }
+  };
+
+  const moveFolder = async (sourceFolderPath: string, targetFolderPath: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/images/folders', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          sourceFolderPath, 
+          targetFolderPath 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error moving folder:', errorData);
+        setError(errorData.error || 'Failed to move folder');
+        return false;
+      }
+
+      // Refetch all data after successful move
+      const [imagesResponse, foldersResponse] = await Promise.all([
+        fetch('/api/images'),
+        fetch('/api/images/folders')
+      ]);
+      
+      if (!imagesResponse.ok || !foldersResponse.ok) {
+        throw new Error('Failed to refresh data');
+      }
+      
+      const imagesData: ApiImage[] = await imagesResponse.json();
+      const foldersData: Folder[] = await foldersResponse.json();
+      
+      setImages(imagesData);
+      setFolders(foldersData);
+      organizeImagesIntoFolders(imagesData, foldersData);
+
+      return true;
+    } catch (error) {
+      console.error('Error moving folder:', error);
+      setError((error as Error).message);
+      return false;
+    }
+  };
+
+  
 
   const moveImages = async (imageIds: string[], targetPath: string) => {
     if (imageIds.length === 0) return;
@@ -150,31 +251,7 @@ export const useMediaData = () => {
   };
 
 
-  const renameFolder = async (folderPath: string, newName: string) => {
-    try {
-      const response = await fetch('/api/images/folders', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          folderPath, 
-          newName 
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error renaming folder:', errorData);
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error renaming folder:', error);
-      return false;
-    }
-  };
+  
 
 
   return {
@@ -185,8 +262,9 @@ export const useMediaData = () => {
     error,
     getCurrentFolder,
     createFolder,
-    moveImages,
+    renameFolder,
+    moveFolder,
     refreshFolderStructure,
-    renameFolder
+    moveImages,
   };
 };

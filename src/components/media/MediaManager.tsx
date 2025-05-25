@@ -15,6 +15,7 @@ import { useImageDragState } from '@/hooks/media/useImageDragState';
 import { useFolderContextMenu } from '@/hooks/media/useFolderContextMenu';
 import { ViewMode } from '@/types/mediaGalleryTypes';
 import { RenameFolderModal } from './RenameFolderModal'; // We'll create this component
+import { useFolderDragState } from '@/hooks/media/useFolderDragState'; // We'll create this hook
 
 export const MediaManager = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -22,20 +23,20 @@ export const MediaManager = () => {
   const [showRenameFolderModal, setShowRenameFolderModal] = useState(false);
   const [folderToRename, setFolderToRename] = useState<string | null>(null);
   // Custom hooks
-  const { loading, error, getCurrentFolder, createFolder, moveImages, refreshFolderStructure, renameFolder } = useMediaData();
+  const { loading, error, getCurrentFolder, createFolder, moveImages, renameFolder, moveFolder } = useMediaData();
+
   const { selectedImages, handleImageClick, clearSelectedImages } = useImageSelection();
   const { currentPath, navigateToFolder, navigateUp } = useFolderNavigation();
   const { isImageDragInProgress, handleActualImageDragStart, handleActualImageDragEnd } = useImageDragState();
   const { folderContextMenu, openFolderContextMenu, closeFolderContextMenu } = useFolderContextMenu();
+  const { isFolderDragInProgress, handleFolderDragStart, handleFolderDragEnd } = useFolderDragState();
 
   
   // Add a new handler for folder creation
   const handleCreateFolder = async (folderPath: string) => {
     const success = await createFolder(folderPath);
       if (success) {
-      // Explicitly refresh the folder structure to ensure UI updates
-      refreshFolderStructure();
-      setShowCreateFolderModal(false);
+        setShowCreateFolderModal(false);
       }
   };
 
@@ -45,16 +46,43 @@ export const MediaManager = () => {
     closeFolderContextMenu();
   };
 
+
   const handleRenameFolder = async (newName: string) => {
     if (folderToRename) {
       const success = await renameFolder(folderToRename, newName);
       if (success) {
-        refreshFolderStructure();
+        // Update the current path if we're inside the renamed folder
+        const oldFolderPath = folderToRename;
+        const parentPath = oldFolderPath.split('/').slice(0, -1).join('/') || '';
+        const newFolderPath = parentPath ? `${parentPath}/${newName}` : newName;
+        
+        // If current path starts with the old folder path, update it
+        if (currentPath.startsWith(oldFolderPath)) {
+          const remainingPath = currentPath.slice(oldFolderPath.length);
+          const updatedPath = newFolderPath + remainingPath;
+          navigateToFolder(updatedPath);
+        }
+        
         setShowRenameFolderModal(false);
         setFolderToRename(null);
       }
     }
   };
+
+  const handleMoveFolderToTarget = async (sourceFolderPath: string, targetFolderPath: string) => {
+    const success = await moveFolder(sourceFolderPath, targetFolderPath);
+    if (success) {
+      // If we're currently inside the moved folder, update navigation
+      if (currentPath.startsWith(sourceFolderPath)) {
+        const remainingPath = currentPath.slice(sourceFolderPath.length);
+        const newPath = targetFolderPath ? `${targetFolderPath}/${sourceFolderPath.split('/').pop()}${remainingPath}` : `${sourceFolderPath.split('/').pop()}${remainingPath}`;
+        navigateToFolder(newPath);
+      }
+    }
+    return success;
+  };
+
+
 
 
   // Handle moving selected images to a context menu folder
@@ -109,8 +137,12 @@ export const MediaManager = () => {
           onFolderClick={navigateToFolder}
           onNavigateUp={navigateUp}
           onDropItemToFolder={moveImages}
+          onDropFolderToFolder={handleMoveFolderToTarget}
           onContextMenuOpen={openFolderContextMenu}
+          onFolderDragStart={handleFolderDragStart}
+          onFolderDragEnd={handleFolderDragEnd}
           selectedItemCount={selectedImages.size}
+          isGloballyDragging={isImageDragInProgress || isFolderDragInProgress}
         />
 
         <ImageGallery

@@ -546,7 +546,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Update the path for all specified images
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('images')
       .update({ 
         path: targetPath === '' ? null : targetPath 
@@ -562,8 +562,6 @@ export async function PATCH(req: NextRequest) {
     }
 
 
-    console.log("data", data);
-    
 
     return NextResponse.json({ 
       success: true, 
