@@ -3,6 +3,7 @@ import { dbCheckPromise, isDbStructureValid } from '@/lib/database/db-check';
 import { uploadOriginal } from '@/lib/upload/image-uploader';
 import { createResized, createPreviewDataUrl } from '@/lib/processing/image-processor';
 import { getImagesFromDb, saveImageToDb } from '@/lib/services/image-service';
+import { Image } from 'components-react';
 
 export async function GET() {
   await dbCheckPromise;
@@ -89,15 +90,15 @@ export async function POST(req: NextRequest) {
     const previewDataUrl = await createPreviewDataUrl(file);
 
     // Save image metadata to database
-    const imageData = {
-      filename: file.name,
-      alt_text: altText,
-      caption: caption,
+    const imageData: Image = {
+      name: file.name,
+      src: originalUrl,
+      alt: altText || '',
+      caption: caption || '',
       width: didUpload.data.width,
       height: didUpload.data.height,
-      file_size: file.size,
       sizes: response.sizes,
-      preview_data_url: previewDataUrl
+      preview: previewDataUrl
     };
 
     try {

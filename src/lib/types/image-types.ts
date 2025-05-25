@@ -1,4 +1,5 @@
-import { ApiImage, Breakpoint, Dimensions, ImageSize } from '@/types/media-server';
+import { Breakpoint, Dimensions, ImageSize } from "components-react";
+
 
 export type SizeRecords = {
   [key in Breakpoint]?: ImageSize;
@@ -17,5 +18,3 @@ export interface ResizeResult extends ActionResult {
   data?: ImageSize;
   sizes?: SizeRecords;
 }
-
-export { ApiImage, Breakpoint, Dimensions, ImageSize };

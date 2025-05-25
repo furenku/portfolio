@@ -1,3 +1,4 @@
+import { Image } from 'components-react';
 import { supabase } from '../database/supabase-client';
 import { ApiImage } from '../types/image-types';
 
@@ -35,16 +36,7 @@ export const getImagesFromDb = async (): Promise<ApiImage[]> => {
   return formattedImages;
 };
 
-export const saveImageToDb = async (imageData: {
-  filename: string;
-  src: string;
-  sizes: any;
-  alt_text?: string | null;
-  caption?: string | null;
-  preview: string;
-  width: number;
-  height: number;
-}): Promise<ApiImage> => {
+export const saveImageToDb = async (imageData: Image): Promise<ApiImage> => {
   const { data: dbData, error: dbError } = await supabase
     .from('images')
     .insert([imageData])
@@ -63,7 +55,7 @@ export const saveImageToDb = async (imageData: {
     caption: dbData.caption,
     sizes: dbData.sizes,
     preview: dbData.preview,
-    filename: dbData.filename,
+    name: dbData.name,
     created_at: dbData.created_at,
     width: dbData.width,
     height: dbData.height,
