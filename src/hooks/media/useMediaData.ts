@@ -237,7 +237,7 @@ const organizeImagesIntoFolders = useCallback((imageList: ApiImage[], folderList
       }
   
       const response = await fetch('/api/images/move', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageIds, folderId: targetFolderId }),
       });
