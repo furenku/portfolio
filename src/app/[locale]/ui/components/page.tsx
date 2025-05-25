@@ -1,39 +1,29 @@
+import { useTranslations } from 'next-intl';
 import StandardLayout from '@/components/layout/StandardLayout';
-import Gallery from '@/components/Gallery';
-import { getTranslations } from 'next-intl/server';
-import { headers } from 'next/headers';
+
+import { UIComponents } from '@/components/projects/UIComponents/UIComponents';
+
+export default function DemoPage() {
+
+  const t = useTranslations('sections.projects.components');
 
 
-export default async function Page() {
 
-  const headersList = await headers();
-  const host = headersList.get('host');
-  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
-  const baseUrl = `${protocol}://${host}`;
-
-  const res = await fetch(`${baseUrl}/api/images`, { cache: 'no-store' });
-
-  const images = await res.json();
-
-  // Server-side translation function
-  const t = await getTranslations('sections.ui.components');
-  
 
   return (
-    <StandardLayout view="fullscreen">
+    <StandardLayout>
       {/* <BackgroundAnimation /> */}
-      <div className="w-full flex flex-col gap-2">
-        <div className="container mx-auto my-4">
-        <h1 className="text-gray-500 text-3xl">
-          { t('items.gallery.title') }
-        </h1>
+      <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-stretch">
+        <h1>{t('title')}</h1>
+        <div className="flex flex-1 md:h-[60vh] md:flex-shrink flex-col gap-4 justify-center">
+          
+          <UIComponents/>
+          
         </div>
-        <div className="w-full h-[50vh] sm:h-[60vh] xl:h-[60vh] overflow-y-hidden mb-20">
-          <Gallery
-            images={images}
-          />
-        </div>
-      </div>      
+
+
+
+      </div>
 
     </StandardLayout>
   );
