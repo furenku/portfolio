@@ -1,8 +1,8 @@
 'use client'
 
 // import { Test, Video, VideoRotator, ImageContainer } from "components-react"
-import { Test, ImageContainer, Gallery, ApiImage } from "components-react"
-import { useState, ReactElement } from "react"
+import { ImageContainer, Gallery, ApiImage } from "components-react"
+import { useState, ReactElement, useEffect } from "react"
 
 import images from "../../../../data/test/images/images.json"
 
@@ -49,13 +49,8 @@ const ImageContainerDemo = () => {
 
 
 const components: Record<ComponentKey, () => ReactElement> = {
-    Test: () => <Test />,
-    ImageContainer: () => <ImageContainer
-        src="https://picsum.photos/200/300"
-        alt="placeholder"
-        blurDataURL="https://picsum.photos/12/18"        
-    />,
-    Gallery: () => <Gallery images={images as ApiImage[]}/>
+    ImageContainer: () => <ImageContainerDemo />,
+    Gallery: () => <Gallery images={images}/>
     
     // VideoRotator: () => <VideoRotator />,
     // ImageContainer: () => <ImageContainer />
@@ -63,7 +58,7 @@ const components: Record<ComponentKey, () => ReactElement> = {
 
 export const UIComponents = () => {
     
-    const [currentComponent, setCurrentComponent] = useState<ComponentKey>('Test')
+    const [currentComponent, setCurrentComponent] = useState<ComponentKey>('ImageContainer')
 
     const CurrentComponent = components[currentComponent];
 
