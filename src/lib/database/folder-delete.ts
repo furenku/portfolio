@@ -67,9 +67,12 @@ async function deleteRecursively(folderId: number): Promise<number> {
 
   let totalDeleted = 0;
 
-  // Recursively delete child folders
-  for (const child of childFolders || []) {
-    totalDeleted += await deleteRecursively(child.id);
+  // Recursively delete child folders in parallel
+  if (childFolders && childFolders.length > 0) {
+    const results = await Promise.all(
+      childFolders.map(child => deleteRecursively(child.id))
+    );
+    totalDeleted += results.reduce((acc, val) => acc + val, 0);
   }
 
   // Delete all images in this folder
@@ -92,7 +95,6 @@ async function deleteRecursively(folderId: number): Promise<number> {
     throw new Error('Error fetching imageFolders from folder');
   }
 
-    
   console.log("Other folders", otherFolders);
 
   if( ! Array.isArray(otherFolders) || otherFolders.length === 0) {
@@ -110,8 +112,6 @@ async function deleteRecursively(folderId: number): Promise<number> {
     }
   }
   
-
-
   const { error: imagesDeleteError } = await supabase
     .from('imageFolders')
     .delete()
