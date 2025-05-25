@@ -21,7 +21,7 @@ export default async function BaseLayout({children}: Props) {
       <div className={clsx(inter.className, 'flex w-screen h-screen flex-col relative')}>
         <Navigation />
         {children}
-        <footer className="w-screen fixed bottom-0 h-20 flex items-center justify-between px-4 text-sm text-gray-500">
+        <footer className="w-screen bottom-0 h-20 flex items-center justify-between px-4 py-8 bg-white text-sm text-gray-500">
           <div>
             <a href="mailto:info@rodrigofrenk.com">
               <span className="font-bold pr-2">
@@ -32,7 +32,7 @@ export default async function BaseLayout({children}: Props) {
               </span>
             </a>
           </div>
-          <span>© 2025</span>
+          <div className='pr-4 text-gray-400'>© 2025</div>
           
         </footer>
       </div>
