@@ -4,7 +4,7 @@ let isDbStructureValid = false;
 
 const dbCheckPromise = (async () => {
   const tableName = 'images';
-  const reqFields = ['id', 'path'];
+  const reqFields = ['id', 'filename', 'src', 'sizes', 'created_at', 'alt_text', 'caption'];
 
   try {
     // Check basic table existence

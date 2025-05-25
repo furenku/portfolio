@@ -7,7 +7,10 @@ import { moveFolder } from '../../../../lib/database/folder-move';
 import { deleteFolder } from '../../../../lib/database/folder-delete';
 
 export async function GET() {
-  await dbCheckPromise;
+  const p = await dbCheckPromise;
+
+  console.log("GET /api/images/folders: Database check promise resolved:", p);
+  
   
   if (!isDbStructureValid) {
     console.error("GET /api/images/folders: Aborting because database structure is invalid.");
