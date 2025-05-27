@@ -90,6 +90,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Create preview data URL for immediate display
+
+    console.log('Creating preview data URL for the uploaded image', file.name, file.size);
+    
     const previewDataUrl = await createPreviewDataUrl(file);
 
     // Save image metadata to database
@@ -132,9 +135,9 @@ export async function POST(req: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Error in POST /api/images:', error);
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
-
+    console.error('Error in POST /api/images:', message );
+    
     return NextResponse.json(
       { error: 'Failed to process image upload', details: message },
       { status: 500 }

@@ -90,9 +90,13 @@ export const createResized = async (
 };
 
 export const createPreviewDataUrl = async (previewImageSize: ImageSize): Promise<string> => {
+  console.log(`Fetching preview image from: ${previewImageSize.src}`);
   const imageResponse = await fetch(previewImageSize.src);
+  
   const arrayBuffer = await imageResponse.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+  console.log(  `Fetched preview image size: ${buffer.length} bytes`);
+
   const base64 = buffer.toString('base64');
   const previewContentType = imageResponse.headers.get('content-type') || 'image/jpeg';
   
