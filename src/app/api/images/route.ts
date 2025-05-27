@@ -29,6 +29,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+
+  await dbCheckPromise;
+
   if (!isDbStructureValid) {
     console.error("POST /api/images: Aborting because database structure is invalid.");
     return new NextResponse(JSON.stringify({ error: 'Server configuration error: Database structure invalid.' }), { status: 500 });
